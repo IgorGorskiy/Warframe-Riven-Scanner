@@ -1,0 +1,22 @@
+{
+    "torid": {
+        "const": ["multishot", "critical_damage"],
+        "var": ["critical_chance", "base_damage_/_melee_damage", "fire_rate_/_attack_speed", "toxin_damage"],
+        "neg": ["projectile_speed", "zoom", "ammo_maximum", "recoil", "magazine_capacity"]},
+    "dual_toxocyst": {
+        "const": ["multishot", "critical_damage"],
+        "var": ["critical_chance", "base_damage_/_melee_damage", "fire_rate_/_attack_speed", "punch_through", "status_chance"],
+        "neg": ["puncture_damage", "projectile_speed", "zoom", "ammo_maximum", "recoil", "magazine_capacity"]},
+    "burston": {
+        "const": ["multishot", "critical_damage"],
+        "var": ["critical_chance", "base_damage_/_melee_damage", "fire_rate_/_attack_speed", "toxin_damage"],
+        "neg": ["puncture_damage", "zoom", "ammo_maximum", "recoil", "magazine_capacity", "impact_damage"]},
+    "latron": {
+        "const": ["multishot", "critical_damage"],
+        "var": ["critical_chance", "base_damage_/_melee_damage", "fire_rate_/_attack_speed", "toxin_damage"],
+        "neg": ["puncture_damage", "zoom", "ammo_maximum", "recoil", "magazine_capacity"]},
+    "magistar": {
+        "const": ["fire_rate_/_attack_speed", "critical_damage"],
+        "var": ["critical_chance", "base_damage_/_melee_damage", "channeling_damage", "range"],
+        "neg": ["finisher_damage", "critical_chance_on_slide_attack", "channeling_efficiency", "impact_damage"]}
+}
