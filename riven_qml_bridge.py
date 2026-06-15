@@ -89,6 +89,9 @@ class RivenAlertItem(QObject):
         self._attributes = item_data.get("attributes", [])
         self._rank       = item_data.get("mod_rank",   0)
         updated_raw      = auction.get("updated", "2026-01-01T00:00:00.000+00:00")
+        quantiles_str = ""
+        if "quantiles" in auction.keys():
+            quantiles_str = f" | Квантили: q(0.1) = {auction["quantiles"][0]}; q(0.25) = {auction["quantiles"][1]}; q(0.50) = {auction["quantiles"][2]}"
 
         # ── sold riven: переопределяем поля ──────────────────────
         if reason == "sold riven":
@@ -133,7 +136,7 @@ class RivenAlertItem(QObject):
                 f"<b>{reason.upper()}</b><br>"
                 f"{self._riven_name}<br>"
                 f"Оружие: {self._weapon}<br>"
-                f"Цена: {self._price} | Re-rolls: {self._re_rolls} | Ratio: {ratio}<br>"
+                f"Цена: {self._price} | Re-rolls: {self._re_rolls} | Ratio: {ratio}{quantiles_str}<br>"
                 f"Владелец: {self._owner_name}, статус: "
                 f'<span style="color:{status_color};font-weight:bold;">{status}</span><br>'
                 f"Дата: {self._datetime}<br>"

@@ -385,7 +385,7 @@ def are_stats_good(auction):
         return 0
     if owner["ingame_name"] == "Naixon-Samir":
         return 0
-    if owner["ingame_name"] == "ClosedLifer":
+    if owner["ingame_name"] == "ClosedLifer2":
         return 0
     attributes = item.get("attributes", {})
     #if minutes_since_updated(updated) > 4 and not item["weapon_url_name"] in Glob.good_weapons:
@@ -396,14 +396,25 @@ def are_stats_good(auction):
     if item["weapon_url_name"] in groll_raw_stats:
         constscore = 0
         varscore = 0
+        stats = []
         for stat in attributes:
+            if stat.get("positive", 0) == False:
+                neg_stat_name = stat.get("url_name")
             if stat.get("positive", 0) == True and (stat.get("url_name") in groll_raw_stats[item["weapon_url_name"]]["const"]):
                 constscore += 1
+                stats.append(stat.get("url_name"))
             elif stat.get("positive", 0) == True and (stat.get("url_name") in groll_raw_stats[item["weapon_url_name"]]["var"]):
                 varscore += 1
+                stats.append(stat.get("url_name"))
             elif stat.get("positive", 0) == False and not (stat.get("url_name") in groll_raw_stats[item["weapon_url_name"]]["neg"]):
                 return 0
         if constscore == 2 and varscore == 1:
+            product:str = item["weapon_url_name"]
+            stats.sort()
+            for stat in stats:
+                product += stat
+            product += neg_stat_name
+            auction["quantiles"] = win.analyser.get_quantiles(product, 0.1, 0.25, 0.5)
             return 1
         else:
             return 0
@@ -508,6 +519,14 @@ class RivenAnalyser:
                 result4[var_stat] = result2
             result[weapon] = result4
         return result
+    
+    def get_quantiles(self, product:str, q1, q2, q3):
+        plot = self.db.get_price_history(product)
+        prices = plot[1]
+        result31 = self.analyser.calculate_q(prices, q1)
+        result32 = self.analyser.calculate_q(prices, q2)
+        result33 = self.analyser.calculate_q(prices, q3)
+        return [result31, result32, result33]
 
 class AuctionWorker(QThread):
     price_checked = Signal(str, list)  # auction_id, prices
@@ -661,9 +680,8 @@ class AuctionWorker(QThread):
                 if not avg_price or avg_price is None:
                     avg_price = 9999999
                     print (f"no avg price for {weapon} {stats} {neg_stat_name}")
-                if avg_price * 0.8 > price:
-                    self.alert_found.emit(auction, "good stats (dismissable)")
-                elif self.is_groll_high_stasts(auction, avg_price):
+                if avg_price * 0.8 > price or self.is_groll_high_stasts(auction, avg_price):
+                    auction["quantiles"] = win.analyser.get_quantiles(product, 0.1, 0.25, 0.5)
                     self.alert_found.emit(auction, "good stats (dismissable)")
             iso_updated = auction["updated"]
             dt_obj = datetime.fromisoformat(iso_updated) + timedelta(hours=3)
