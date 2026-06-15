@@ -29,6 +29,7 @@ from prices_analysis import Analyser
 from datetime import datetime, timezone, timedelta
 from typing import List, Tuple
 from myplot import PricePlot
+from password_storage import CredentialsStorage
 import pandas as pd
 import numpy as np
 
@@ -75,9 +76,6 @@ cur_dir = os.path.dirname(os.path.abspath(__file__))
 settings_path = os.path.join(cur_dir, "settings.json")
 blacklist_path = os.path.join(cur_dir, "pidors.json")
 groll_stats_path = os.path.join(cur_dir, "groll_stats.json")
-login_path = os.path.join(cur_dir, "marketLogin.json")
-with open(login_path) as ff:
-    login = json.load(ff)
 
 #содержимое файла marketLogin.json должно выглядеть так:
 
@@ -958,6 +956,7 @@ class MainWindow(QMainWindow):
         self.startupTime = time.time()
         self.scanTimes = []
         self.db = RivenDatabase()
+        self.market_account = CredentialsStorage()
         self.pod_roll_db = PodRollDB(Glob.good_weapons)
         #self.grollDB = MongoDBManager()
         self.podRollText = QTextEdit()
@@ -1105,14 +1104,22 @@ class MainWindow(QMainWindow):
     def run_repost_rivens(self):
         self._start_bumper("repost_rivens")
 
+    def run_bumper_test(self):
+        self._start_bumper("test")
+
     def _start_bumper(self, mode):
         if self.bumper_worker and self.bumper_worker.isRunning():
             self.bump_log.append("⚠️ Бампер уже запущен!")
             return
         self.bump_log.clear()
-        self.bumper_worker = BumperWorker(mode=mode)
+        login, password, username = self.market_account.load()
+        if login == "fail":
+            win.ui.accountDataStasusDisplay.setText("Нет сохранённых данных для входа. Введите и сохраните данные.")
+            return
+        self.bumper_worker = BumperWorker(login, password, username, mode=mode)
         self.bumper_worker.log_signal.connect(self.bump_log.append)
         self.bumper_worker.finished.connect(self._on_bumper_finished)
+        self.bumper_worker.testing_result.connect(self.on_bumper_testing_result)
         self.bump_btn.setEnabled(False)
         self.decrease_btn.setEnabled(False)
         self.repost_btn.setEnabled(False)
@@ -1452,6 +1459,18 @@ class MainWindow(QMainWindow):
         value = float(win.ui.volumeSlider.value()) / 100.0
         self.root.changeVolume(value)
 
+    def on_bumper_testing_result(self, result:str):
+        win.ui.accountDataStasusDisplay.setText(result)
+
+    def on_save_account_data(self):
+        login = win.ui.LoginInput.text()
+        password = win.ui.PasswordInput.text()
+        nickname = win.ui.NicknameInput.text()
+        self.market_account.save(login, password, nickname)
+        win.ui.LoginInput.setText("")
+        win.ui.PasswordInput.setText("")
+        win.ui.NicknameInput.setText("")
+
 def insertMSG():
     time.sleep(0.15)
     Log.log_write(f"trying to insert alt+v msg: {Glob.altvmsg}", logs = Log.altvLogs)
@@ -1516,6 +1535,8 @@ if __name__ == "__main__":
     win.ui.grollProgress.setMaximum(len(Glob.groll_urls))
     win.ui.podRollProgress.setMaximum(len(Glob.good_weapons))
     win.ui.volumeSlider.valueChanged.connect(win.on_volume_changed)
+    win.ui.ensureAccountDataBtn.pressed.connect(win.run_bumper_test)
+    win.ui.SaveMarketAccountData.pressed.connect(win.on_save_account_data)
     log_printer.new_log.connect(win.ui.logsText.setText)
 
     #claude
@@ -1546,10 +1567,8 @@ if __name__ == "__main__":
         for key2, val2 in result[key1].items():
             result[key1][key2] = [result[key1][key2], res["torid"][key1][key2]]
     pretty_json2 = json.dumps(result, indent=4)
-    print(pretty_json2)
-    print(model)
-    pretty_json = json.dumps(res, indent=4)
-    print(pretty_json)
+    #print(pretty_json2)
+    #print(model)
     if SVINKA_VSEGDA_VIDNA:
         win.ui.tab_4.deleteLater()
         #win.ui.tab_4.isVisible()

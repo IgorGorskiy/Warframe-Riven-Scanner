@@ -9,9 +9,6 @@ from PySide6.QtWidgets import QScroller
 from PySide6.QtCore import Signal, QThread, QObject
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
-login_path = os.path.join(cur_dir, "marketLogin.json")
-with open(login_path) as ff:
-    login = json.load(ff)
 
 #содержимое файла marketLogin.json должно выглядеть так:
 
@@ -22,21 +19,19 @@ with open(login_path) as ff:
 }
 
 #конец содержимого
-
-BUMPER_EMAIL = login["login"]
-BUMPER_PASSWORD = login["password"]
-BUMPER_NICKNAME = login.get("nickname", "closedlifer")
 BUMP_DELAY = 0.3
 MIN_INTERVAL_PER_ORDER = 60
 
 class MarketAPI:
     """API клиент для управления ордерами на warframe.market"""
 
-    def __init__(self):
+    def __init__(self, login, password, username):
+        self.login_str = login
+        self.password =  password
         self.token = None
         self.last_status = 0
         self.last_response = ""
-        self.nickname = BUMPER_NICKNAME
+        self.nickname = username
 
     def login(self):
         self.session = requests.Session()
@@ -44,8 +39,8 @@ class MarketAPI:
             "https://api.warframe.market/v1/auth/signin",
             json={
                 "auth_type": "header",
-                "email": BUMPER_EMAIL,
-                "password": BUMPER_PASSWORD,
+                "email": self.login_str,
+                "password": self.password,
                 "device_id": f"bot-{int(time.time())}"
             },
             headers={
@@ -86,6 +81,17 @@ class MarketAPI:
             "https://api.warframe.market/v2/orders/my",
             headers=self._headers()
         )
+        data = r.json()
+        return data.get("data", [])
+    
+    def get_orders_by_nickname(self, nickname):
+        r = self.session.get(
+            "https://api.warframe.market/v2/profile/" + nickname + "/orders",
+            headers=self._headers()
+        )
+        print("https://api.warframe.market/v2/profile/" + nickname + "/orders")
+        if r.status_code != 200:
+            return {}
         data = r.json()
         return data.get("data", [])
 
@@ -178,19 +184,56 @@ class BumperWorker(QThread):
     """Поток для выполнения bump/снижения цен"""
     log_signal = Signal(str)
     finished = Signal()
+    testing_result = Signal(str)
 
-    def __init__(self, mode="bump"):
+    def __init__(self, login, password, username, mode="bump"):
+        self.login = login
+        self.password = password
+        self.username = username
         super().__init__()
         self.mode = mode  # "bump" или "decrease"
         self.running = True
 
+    def update_single_auction(self, a, errors, bumped):
+        if not self.running:
+            self.log_signal.emit("🛑 Остановлено")
+            return False
+        auc_id = a["id"]
+        item = a.get("item", {})
+        weapon = item.get("weapon_url_name", "unknown")
+        buyout = a.get("buyout_price")
+        note = a.get("note", "")
+        minimal_rep = a.get("minimal_reputation", 0)
+        if not buyout:
+            self.log_signal.emit(f"⏭ [{weapon}] нет buyout — пропуск")
+            skipped += 1
+            return False
+        self.log_signal.emit(f"🗑 [{weapon}] удаляю ({buyout}p)...")
+        if not self.api.close_auction(auc_id):
+            self.log_signal.emit(f"❌ [{weapon}] не удалось удалить (код: {self.api.last_status} | {self.api.last_response})")
+            errors += 1
+            return False
+        time.sleep(0.5)
+        self.log_signal.emit(f"➕ [{weapon}] создаю заново ({buyout}p)...")
+        ok, err = self.api.create_auction(item, buyout, minimal_rep, note)
+        if ok:
+            self.log_signal.emit(f"✅ [{weapon}] перевыставлен ({buyout}p)")
+            bumped += 1
+        else:
+            self.log_signal.emit(f"❌ [{weapon}] ошибка: {err}")
+            errors += 1
+        time.sleep(1.0)
+        return True
+
     def run(self):
         self.log_signal.emit("🔐 Авторизация...")
-        self.api = MarketAPI()
+        self.api = MarketAPI(self.login, self.password, self.username)
         ok, msg = self.api.login()
         if not ok:
             self.log_signal.emit(f"❌ {msg}")
             self.finished.emit()
+            if self.mode == "test":
+                self.testing_result.emit(f"❌ Не удалось авторизоваться. | {msg}")
             return
         self.log_signal.emit("✅ Авторизован")
 
@@ -200,7 +243,8 @@ class BumperWorker(QThread):
 
         if self.mode in ("bump", "decrease"):
             orders = self.api.get_orders()
-            sell_orders = [o for o in orders if o.get("type") == "sell"]
+            #sell_orders = [o for o in orders if o.get("type") == "sell"]
+            sell_orders = orders
             self.log_signal.emit(f"📦 Найдено ордеров на продажу: {len(sell_orders)}")
             state = MarketBumperState()
 
@@ -246,40 +290,19 @@ class BumperWorker(QThread):
             self.log_signal.emit(f"📦 Найдено аукционов (ривенов): {len(auctions)}")
 
             for a in auctions:
-                if not self.running:
-                    self.log_signal.emit("🛑 Остановлено")
-                    break
+                self.update_single_auction(a, errors, bumped)
 
-                auc_id = a["id"]
-                item = a.get("item", {})
-                weapon = item.get("weapon_url_name", "unknown")
-                buyout = a.get("buyout_price")
-                note = a.get("note", "")
-                minimal_rep = a.get("minimal_reputation", 0)
-
-                if not buyout:
-                    self.log_signal.emit(f"⏭ [{weapon}] нет buyout — пропуск")
-                    skipped += 1
-                    continue
-
-                self.log_signal.emit(f"🗑 [{weapon}] удаляю ({buyout}p)...")
-                if not self.api.close_auction(auc_id):
-                    self.log_signal.emit(f"❌ [{weapon}] не удалось удалить (код: {self.api.last_status} | {self.api.last_response})")
-                    errors += 1
-                    continue
-
-                time.sleep(0.5)
-
-                self.log_signal.emit(f"➕ [{weapon}] создаю заново ({buyout}p)...")
-                ok, err = self.api.create_auction(item, buyout, minimal_rep, note)
-                if ok:
-                    self.log_signal.emit(f"✅ [{weapon}] перевыставлен ({buyout}p)")
-                    bumped += 1
-                else:
-                    self.log_signal.emit(f"❌ [{weapon}] ошибка: {err}")
-                    errors += 1
-
-                time.sleep(1.0)
+        elif self.mode == "test":
+            auctions = self.api.get_my_auctions()
+            if len(auctions) < 1:
+                self.testing_result.emit("Для сохранённого никнейма нет ордеров на маркете. Это не позволяет провести тест работы свинки")
+                return
+            a = auctions[0]
+            errors = 0
+            if self.update_single_auction(a, errors, bumped):
+                self.testing_result.emit("ВСЁ ЗАЕБИСЬ, МОЖНО ПОЛЬЗОВАТЬСЯ СВИНКОЙ")
+            else:
+                self.testing_result.emit("❌ Тест обновления ривена провален. Проверь правильность НИКНЕЙМА!")
 
         self.log_signal.emit("─" * 30)
         self.log_signal.emit(f"✅ Выполнено: {bumped} | ⏭ Пропущено: {skipped} | ❌ Ошибок: {errors}")

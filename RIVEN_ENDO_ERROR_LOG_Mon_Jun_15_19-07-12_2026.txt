@@ -1,0 +1,567 @@
+Mon Jun 15 19:07:12 2026
+Worker error: Traceback (most recent call last):
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connection.py", line 174, in _new_conn
+    conn = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\util\connection.py", line 95, in create_connection
+    raise err
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    sock.connect(sa)
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+                       ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connection.py", line 363, in connect
+    self.sock = conn = self._new_conn()
+                       ^^^^^^^^^^^^^^^^
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connection.py", line 179, in _new_conn
+    raise ConnectTimeoutError(
+urllib3.exceptions.ConnectTimeoutError: (<urllib3.connection.HTTPSConnection object at 0x000001D7CAA40380>, 'Connection to api.warframe.market timed out. (connect timeout=10)')
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\requests\adapters.py", line 486, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\connectionpool.py", line 802, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\urllib3\util\retry.py", line 594, in increment
+    raise MaxRetryError(_pool, url, error or ResponseError(cause))
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='api.warframe.market', port=443): Max retries exceeded with url: /v1/auctions/search?type=riven&positive_stats=multishot,critical_damage,toxin_damage&negative_stats=has&sort_by=price_asc&weapon_url_name=burston (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D7CAA40380>, 'Connection to api.warframe.market timed out. (connect timeout=10)'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "c:\amyfiles\projects\rivenendo\scanner2claudeQML.py", line 803, in run
+    r = self.market_limiter.get_response(groll_url, Glob.mode_to_cooldown[self.mode], headers=HEADERS, timeout=10)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\amyfiles\projects\rivenendo\scanner2claudeQML.py", line 275, in get_response
+    r = requests.get(URL, headers = headers, timeout = timeout)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\requests\api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\requests\api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\requests\sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\requests\sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Igor\AppData\Local\Programs\Python\Python312\Lib\site-packages\requests\adapters.py", line 507, in send
+    raise ConnectTimeout(e, request=request)
+requests.exceptions.ConnectTimeout: HTTPSConnectionPool(host='api.warframe.market', port=443): Max retries exceeded with url: /v1/auctions/search?type=riven&positive_stats=multishot,critical_damage,toxin_damage&negative_stats=has&sort_by=price_asc&weapon_url_name=burston (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D7CAA40380>, 'Connection to api.warframe.market timed out. (connect timeout=10)'))
+
+18:55:57.326364: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 3; groll_url_id = 20; mode = BASE_API; firstRun = False; sync_needed = False; turned_off = False; stage_id = 14; amount of stages = 14; cooldown = 3.0
+18:55:57.328347: requesting API_AUCTIONS; mode = BASE_API
+18:56:01.016223: last_api_updae = 18:54:03.432891
+18:56:01.018208: got 100 auctions. mode: BASE_API
+18:56:01.018708: api update detected. sync aquired. last_call = 1781538961.0162227s
+18:56:01.018708: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 3; groll_url_id = 20; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 0; amount of stages = 14; cooldown = 7.0
+18:56:01.021182: getting weapon_for_db. good_weapons_id = 3
+18:56:01.021182: got weapon_for_db. weapon_for_db = bo
+18:56:01.021182: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + bo, i = 0
+18:56:08.991815: last_api_updae = 18:56:01.018708
+18:56:09.001737: got 500 auctions. mode: WEAPON_FOR_DB_SEARCH
+18:56:09.008231: starting writing to DB data for bo; amount of auctions: 500
+18:56:09.008727: writing to DB data: [200, 230, 230] || for time: 1781538969
+18:56:09.022100: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 4; groll_url_id = 20; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 1; amount of stages = 14; cooldown = 7.0
+18:56:09.026070: getting weapon_for_db. good_weapons_id = 4
+18:56:09.026564: got weapon_for_db. weapon_for_db = magistar
+18:56:09.026564: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + magistar, i = 0
+18:56:16.922094: last_api_updae = 18:56:01.018708
+18:56:16.937497: got 500 auctions. mode: WEAPON_FOR_DB_SEARCH
+18:56:16.937497: starting writing to DB data for magistar; amount of auctions: 500
+18:56:16.937497: writing to DB data: [625, 640, 650] || for time: 1781538976
+18:56:17.025071: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 5; groll_url_id = 20; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 2; amount of stages = 14; cooldown = 7.0
+18:56:17.028052: getting weapon_for_db. good_weapons_id = 5
+18:56:17.028829: got weapon_for_db. weapon_for_db = furis
+18:56:17.028829: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + furis, i = 0
+18:56:24.808290: last_api_updae = 18:56:01.018708
+18:56:24.822630: got 500 auctions. mode: WEAPON_FOR_DB_SEARCH
+18:56:24.828580: starting writing to DB data for furis; amount of auctions: 500
+18:56:24.828580: writing to DB data: [105, 105, 110] || for time: 1781538984
+18:56:24.839002: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 6; groll_url_id = 20; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 3; amount of stages = 14; cooldown = 7.0
+18:56:24.840985: requesting GROLL
+18:56:32.539097: last_api_updae = 18:56:01.018708
+18:56:32.541082: got 21 auctions. mode: GROLL
+18:56:32.548522: starting writing to GROLL DB data for magistar; amount of auctions: 21
+18:56:32.862050: writing to DB groll data for magistarcritical_damagefire_rate_/_attack_speedrange
+18:56:32.862050: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 6; groll_url_id = 21; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 4; amount of stages = 14; cooldown = 7.0
+18:56:32.864531: requesting GROLL
+18:56:40.421443: last_api_updae = 18:56:01.018708
+18:56:40.431887: got 205 auctions. mode: GROLL
+18:56:40.432390: starting writing to GROLL DB data for torid; amount of auctions: 205
+18:56:42.274333: writing to DB groll data for toridcritical_chancecritical_damagemultishot
+18:56:42.274832: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 6; groll_url_id = 1; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 5; amount of stages = 14; cooldown = 7.0
+18:56:42.277808: FAST_SEARCH. self.fast_weap_id = 0
+18:56:42.277808: got fast weapon. weapon = torid
+18:56:42.277808: FAST_SEARCH: requesting BASE_WEAPONS_URL + torid, i = 0
+18:56:48.249527: last_api_updae = 18:56:01.018708
+18:56:48.260475: got 500 auctions. mode: FAST_SEARCH
+18:56:48.266426: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 1; good_weapons_id = 6; groll_url_id = 1; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 6; amount of stages = 14; cooldown = 7.0
+18:56:48.268909: FAST_SEARCH. self.fast_weap_id = 1
+18:56:48.268909: got fast weapon. weapon = verglas
+18:56:48.268909: FAST_SEARCH: requesting BASE_WEAPONS_URL + verglas, i = 0
+18:56:56.453676: last_api_updae = 18:56:01.018708
+18:56:56.467766: got 500 auctions. mode: FAST_SEARCH
+18:56:56.472435: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 2; good_weapons_id = 6; groll_url_id = 1; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 7; amount of stages = 14; cooldown = 7.0
+18:56:56.474584: FAST_SEARCH. self.fast_weap_id = 2
+18:56:56.474584: got fast weapon. weapon = magistar
+18:56:56.474584: FAST_SEARCH: requesting BASE_WEAPONS_URL + magistar, i = 0
+18:57:04.368656: last_api_updae = 18:56:01.018708
+18:57:04.381697: got 500 auctions. mode: FAST_SEARCH
+18:57:04.463420: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 3; good_weapons_id = 6; groll_url_id = 1; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 8; amount of stages = 14; cooldown = 7.0
+18:57:04.466931: FAST_SEARCH. self.fast_weap_id = 3
+18:57:04.466931: got fast weapon. weapon = burston
+18:57:04.466931: FAST_SEARCH: requesting BASE_WEAPONS_URL + burston, i = 0
+18:57:12.314443: last_api_updae = 18:56:01.018708
+18:57:12.326382: got 500 auctions. mode: FAST_SEARCH
+18:57:12.330427: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 4; good_weapons_id = 6; groll_url_id = 1; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 9; amount of stages = 14; cooldown = 7.0
+18:57:12.333990: requesting GROLL
+18:57:20.118151: last_api_updae = 18:56:01.018708
+18:57:20.121622: got 85 auctions. mode: GROLL
+18:57:20.121622: starting writing to GROLL DB data for torid; amount of auctions: 85
+18:57:20.867748: writing to DB groll data for toridbase_damage_/_melee_damagecritical_damagemultishot
+18:57:20.868567: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 6; groll_url_id = 2; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 10; amount of stages = 14; cooldown = 7.0
+18:57:20.871357: requesting GROLL
+18:57:27.848236: last_api_updae = 18:56:01.018708
+18:57:27.849725: got 47 auctions. mode: GROLL
+18:57:27.854188: starting writing to GROLL DB data for torid; amount of auctions: 47
+18:57:28.394344: writing to DB groll data for toridcritical_damagefire_rate_/_attack_speedmultishot
+18:57:28.394344: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 6; groll_url_id = 3; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 11; amount of stages = 14; cooldown = 7.0
+18:57:28.397412: requesting GROLL
+18:57:35.623841: last_api_updae = 18:56:01.018708
+18:57:35.625329: got 65 auctions. mode: GROLL
+18:57:35.630785: starting writing to GROLL DB data for torid; amount of auctions: 65
+18:57:36.431679: writing to DB groll data for toridcritical_damagemultishottoxin_damage
+18:57:36.432721: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 6; groll_url_id = 4; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 12; amount of stages = 14; cooldown = 7.0
+18:57:36.436239: requesting GROLL
+18:57:43.418514: last_api_updae = 18:56:01.018708
+18:57:43.422477: got 115 auctions. mode: GROLL
+18:57:43.427437: starting writing to GROLL DB data for dual_toxocyst; amount of auctions: 115
+18:57:44.586836: writing to DB groll data for dual_toxocystcritical_chancecritical_damagemultishot
+18:57:44.586836: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 6; groll_url_id = 5; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 13; amount of stages = 14; cooldown = 7.0
+18:57:44.589319: requesting GROLL
+18:57:51.149381: last_api_updae = 18:56:01.018708
+18:57:51.150868: got 45 auctions. mode: GROLL
+18:57:51.157315: starting writing to GROLL DB data for dual_toxocyst; amount of auctions: 45
+18:57:51.649173: writing to DB groll data for dual_toxocystbase_damage_/_melee_damagecritical_damagemultishot
+18:57:51.649173: mode changes to BASE_API because 110s passed; lastcall = 1781539071.1488867s
+18:57:51.649682: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 6; groll_url_id = 6; mode = BASE_API; firstRun = False; sync_needed = False; turned_off = False; stage_id = 14; amount of stages = 14; cooldown = 3.0
+18:57:51.653652: requesting API_AUCTIONS; mode = BASE_API
+18:57:54.894752: last_api_updae = 18:56:01.018708
+18:57:54.897224: got 100 auctions. mode: BASE_API
+18:57:54.898230: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 6; groll_url_id = 6; mode = BASE_API; firstRun = False; sync_needed = False; turned_off = False; stage_id = 14; amount of stages = 14; cooldown = 3.0
+18:57:54.901206: requesting API_AUCTIONS; mode = BASE_API
+18:57:58.637098: last_api_updae = 18:56:01.018708
+18:57:58.638586: got 100 auctions. mode: BASE_API
+18:57:58.639579: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 6; groll_url_id = 6; mode = BASE_API; firstRun = False; sync_needed = False; turned_off = False; stage_id = 14; amount of stages = 14; cooldown = 3.0
+18:57:58.642060: requesting API_AUCTIONS; mode = BASE_API
+18:58:02.347840: last_api_updae = 18:56:01.018708
+18:58:02.350815: got 100 auctions. mode: BASE_API
+18:58:02.352799: api update detected. sync aquired. last_call = 1781539082.3478396s
+18:58:02.352799: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 6; groll_url_id = 6; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 0; amount of stages = 14; cooldown = 7.0
+18:58:02.356322: getting weapon_for_db. good_weapons_id = 6
+18:58:02.356322: got weapon_for_db. weapon_for_db = burston
+18:58:02.356322: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + burston, i = 0
+18:58:10.230098: last_api_updae = 18:58:02.352799
+18:58:10.251475: got 500 auctions. mode: WEAPON_FOR_DB_SEARCH
+18:58:10.252563: starting writing to DB data for burston; amount of auctions: 500
+18:58:10.252563: writing to DB data: [350, 360, 364] || for time: 1781539090
+18:58:10.263030: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 7; groll_url_id = 6; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 1; amount of stages = 14; cooldown = 7.0
+18:58:10.265012: getting weapon_for_db. good_weapons_id = 7
+18:58:10.265012: got weapon_for_db. weapon_for_db = ogris
+18:58:10.265012: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + ogris, i = 0
+18:58:18.232456: last_api_updae = 18:58:02.352799
+18:58:18.244465: got 500 auctions. mode: WEAPON_FOR_DB_SEARCH
+18:58:18.250625: starting writing to DB data for ogris; amount of auctions: 500
+18:58:18.250625: writing to DB data: [65, 65, 65] || for time: 1781539098
+18:58:18.263078: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 8; groll_url_id = 6; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 2; amount of stages = 14; cooldown = 7.0
+18:58:18.266548: getting weapon_for_db. good_weapons_id = 8
+18:58:18.266548: got weapon_for_db. weapon_for_db = okina
+18:58:18.266548: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + okina, i = 0
+18:58:26.225789: last_api_updae = 18:58:02.352799
+18:58:26.248038: got 500 auctions. mode: WEAPON_FOR_DB_SEARCH
+18:58:26.248533: starting writing to DB data for okina; amount of auctions: 500
+18:58:26.249029: writing to DB data: [150, 160, 160] || for time: 1781539106
+18:58:26.261543: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 9; groll_url_id = 6; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 3; amount of stages = 14; cooldown = 7.0
+18:58:26.265131: requesting GROLL
+18:58:33.947790: last_api_updae = 18:58:02.352799
+18:58:33.950273: got 32 auctions. mode: GROLL
+18:58:33.956718: starting writing to GROLL DB data for dual_toxocyst; amount of auctions: 32
+18:58:34.228041: writing to DB groll data for dual_toxocystcritical_damagefire_rate_/_attack_speedmultishot
+18:58:34.228546: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 9; groll_url_id = 7; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 4; amount of stages = 14; cooldown = 7.0
+18:58:34.231582: requesting GROLL
+18:58:41.730563: last_api_updae = 18:58:02.352799
+18:58:41.739527: got 60 auctions. mode: GROLL
+18:58:41.740025: starting writing to GROLL DB data for dual_toxocyst; amount of auctions: 60
+18:58:42.485141: writing to DB groll data for dual_toxocystcritical_damagemultishotpunch_through
+18:58:42.485651: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 9; groll_url_id = 8; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 5; amount of stages = 14; cooldown = 7.0
+18:58:42.488199: FAST_SEARCH. self.fast_weap_id = 0
+18:58:42.488199: got fast weapon. weapon = torid
+18:58:42.488199: FAST_SEARCH: requesting BASE_WEAPONS_URL + torid, i = 0
+18:58:49.635621: last_api_updae = 18:58:02.352799
+18:58:49.649016: got 500 auctions. mode: FAST_SEARCH
+18:58:49.654566: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 1; good_weapons_id = 9; groll_url_id = 8; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 6; amount of stages = 14; cooldown = 7.0
+18:58:49.657546: FAST_SEARCH. self.fast_weap_id = 1
+18:58:49.657546: got fast weapon. weapon = verglas
+18:58:49.657546: FAST_SEARCH: requesting BASE_WEAPONS_URL + verglas, i = 0
+18:58:57.701177: last_api_updae = 18:58:02.352799
+18:58:57.747271: got 500 auctions. mode: FAST_SEARCH
+18:58:57.758559: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 2; good_weapons_id = 9; groll_url_id = 8; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 7; amount of stages = 14; cooldown = 7.0
+18:58:57.766110: FAST_SEARCH. self.fast_weap_id = 2
+18:58:57.768601: got fast weapon. weapon = magistar
+18:58:57.769098: FAST_SEARCH: requesting BASE_WEAPONS_URL + magistar, i = 0
+18:59:05.695489: last_api_updae = 18:58:02.352799
+18:59:05.707314: got 500 auctions. mode: FAST_SEARCH
+18:59:05.794310: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 3; good_weapons_id = 9; groll_url_id = 8; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 8; amount of stages = 14; cooldown = 7.0
+18:59:05.798282: FAST_SEARCH. self.fast_weap_id = 3
+18:59:05.798282: got fast weapon. weapon = burston
+18:59:05.798282: FAST_SEARCH: requesting BASE_WEAPONS_URL + burston, i = 0
+18:59:13.676348: last_api_updae = 18:58:02.352799
+18:59:13.691244: got 500 auctions. mode: FAST_SEARCH
+18:59:13.696186: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 4; good_weapons_id = 9; groll_url_id = 8; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 9; amount of stages = 14; cooldown = 7.0
+18:59:13.700651: requesting GROLL
+18:59:21.445133: last_api_updae = 18:58:02.352799
+18:59:21.449101: got 21 auctions. mode: GROLL
+18:59:21.454558: starting writing to GROLL DB data for dual_toxocyst; amount of auctions: 21
+18:59:21.697677: writing to DB groll data for dual_toxocystcritical_damagemultishotstatus_chance
+18:59:21.697677: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 9; groll_url_id = 9; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 10; amount of stages = 14; cooldown = 7.0
+18:59:21.700654: requesting GROLL
+18:59:29.250634: last_api_updae = 18:58:02.352799
+18:59:29.255101: got 116 auctions. mode: GROLL
+18:59:29.260059: starting writing to GROLL DB data for burston; amount of auctions: 116
+18:59:30.427838: writing to DB groll data for burstoncritical_chancecritical_damagemultishot
+18:59:30.427838: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 9; groll_url_id = 10; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 11; amount of stages = 14; cooldown = 7.0
+18:59:30.430334: requesting GROLL
+18:59:36.968816: last_api_updae = 18:58:02.352799
+18:59:36.978269: got 60 auctions. mode: GROLL
+18:59:36.978269: starting writing to GROLL DB data for burston; amount of auctions: 60
+18:59:37.573545: writing to DB groll data for burstonbase_damage_/_melee_damagecritical_damagemultishot
+18:59:37.573545: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 9; groll_url_id = 11; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 12; amount of stages = 14; cooldown = 7.0
+18:59:37.576548: requesting GROLL
+18:59:44.765689: last_api_updae = 18:58:02.352799
+18:59:44.766681: got 57 auctions. mode: GROLL
+18:59:44.775111: starting writing to GROLL DB data for burston; amount of auctions: 57
+18:59:45.470481: writing to DB groll data for burstoncritical_damagefire_rate_/_attack_speedmultishot
+18:59:45.470481: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 9; groll_url_id = 12; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 13; amount of stages = 14; cooldown = 7.0
+18:59:45.472540: requesting GROLL
+18:59:52.488094: last_api_updae = 18:58:02.352799
+18:59:52.495546: got 59 auctions. mode: GROLL
+18:59:52.495546: starting writing to GROLL DB data for burston; amount of auctions: 59
+18:59:53.165792: writing to DB groll data for burstoncritical_damagemultishottoxin_damage
+18:59:53.165792: mode changes to BASE_API because 110s passed; lastcall = 1781539192.488094s
+18:59:53.165792: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 9; groll_url_id = 13; mode = BASE_API; firstRun = False; sync_needed = False; turned_off = False; stage_id = 14; amount of stages = 14; cooldown = 3.0
+18:59:53.167592: requesting API_AUCTIONS; mode = BASE_API
+18:59:56.242462: last_api_updae = 18:58:02.352799
+18:59:56.245933: got 100 auctions. mode: BASE_API
+18:59:56.248412: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 9; groll_url_id = 13; mode = BASE_API; firstRun = False; sync_needed = False; turned_off = False; stage_id = 14; amount of stages = 14; cooldown = 3.0
+18:59:56.253380: requesting API_AUCTIONS; mode = BASE_API
+19:00:00.018029: last_api_updae = 18:58:02.352799
+19:00:00.021994: got 100 auctions. mode: BASE_API
+19:00:00.023482: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 9; groll_url_id = 13; mode = BASE_API; firstRun = False; sync_needed = False; turned_off = False; stage_id = 14; amount of stages = 14; cooldown = 3.0
+19:00:00.025962: requesting API_AUCTIONS; mode = BASE_API
+19:00:04.207200: last_api_updae = 18:58:02.352799
+19:00:04.210175: got 100 auctions. mode: BASE_API
+19:00:04.211672: api update detected. sync aquired. last_call = 1781539204.2071998s
+19:00:04.211672: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 9; groll_url_id = 13; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 0; amount of stages = 14; cooldown = 7.0
+19:00:04.214710: getting weapon_for_db. good_weapons_id = 9
+19:00:04.214710: got weapon_for_db. weapon_for_db = latron
+19:00:04.214710: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + latron, i = 0
+19:00:12.502704: last_api_updae = 19:00:04.211672
+19:00:12.520931: got 500 auctions. mode: WEAPON_FOR_DB_SEARCH
+19:00:12.520931: starting writing to DB data for latron; amount of auctions: 500
+19:00:12.520931: writing to DB data: [75, 75, 80] || for time: 1781539212
+19:00:12.531591: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 10; groll_url_id = 13; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 1; amount of stages = 14; cooldown = 7.0
+19:00:12.533644: getting weapon_for_db. good_weapons_id = 10
+19:00:12.533644: got weapon_for_db. weapon_for_db = verglas
+19:00:12.533644: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + verglas, i = 0
+19:00:20.476357: last_api_updae = 19:00:04.211672
+19:00:20.494122: got 500 auctions. mode: WEAPON_FOR_DB_SEARCH
+19:00:20.494122: starting writing to DB data for verglas; amount of auctions: 500
+19:00:20.494677: writing to DB data: [419, 420, 460] || for time: 1781539220
+19:00:20.506752: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 11; groll_url_id = 13; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 2; amount of stages = 14; cooldown = 7.0
+19:00:20.509235: getting weapon_for_db. good_weapons_id = 11
+19:00:20.509235: got weapon_for_db. weapon_for_db = stug
+19:00:20.509235: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + stug, i = 0
+19:00:28.514282: last_api_updae = 19:00:04.211672
+19:00:28.524698: got 499 auctions. mode: WEAPON_FOR_DB_SEARCH
+19:00:28.529662: starting writing to DB data for stug; amount of auctions: 499
+19:00:28.529662: writing to DB data: [130, 150, 150] || for time: 1781539228
+19:00:28.539726: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 12; groll_url_id = 13; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 3; amount of stages = 14; cooldown = 7.0
+19:00:28.543694: requesting GROLL
+19:00:36.279086: last_api_updae = 19:00:04.211672
+19:00:36.284548: got 67 auctions. mode: GROLL
+19:00:36.288012: starting writing to GROLL DB data for latron; amount of auctions: 67
+19:00:36.989455: writing to DB groll data for latroncritical_chancecritical_damagemultishot
+19:00:36.989968: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 12; groll_url_id = 14; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 4; amount of stages = 14; cooldown = 7.0
+19:00:36.991811: requesting GROLL
+19:00:44.066304: last_api_updae = 19:00:04.211672
+19:00:44.067796: got 40 auctions. mode: GROLL
+19:00:44.072284: starting writing to GROLL DB data for latron; amount of auctions: 40
+19:00:44.440465: writing to DB groll data for latronbase_damage_/_melee_damagecritical_damagemultishot
+19:00:44.440465: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 12; groll_url_id = 15; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 5; amount of stages = 14; cooldown = 7.0
+19:00:44.444924: FAST_SEARCH. self.fast_weap_id = 0
+19:00:44.444924: got fast weapon. weapon = torid
+19:00:44.444924: FAST_SEARCH: requesting BASE_WEAPONS_URL + torid, i = 0
+19:00:52.133528: last_api_updae = 19:00:04.211672
+19:00:52.145927: got 500 auctions. mode: FAST_SEARCH
+19:00:52.151745: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 1; good_weapons_id = 12; groll_url_id = 15; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 6; amount of stages = 14; cooldown = 7.0
+19:00:52.154722: FAST_SEARCH. self.fast_weap_id = 1
+19:00:52.154722: got fast weapon. weapon = verglas
+19:00:52.154722: FAST_SEARCH: requesting BASE_WEAPONS_URL + verglas, i = 0
+19:01:00.221636: last_api_updae = 19:00:04.211672
+19:01:00.232055: got 500 auctions. mode: FAST_SEARCH
+19:01:00.236362: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 2; good_weapons_id = 12; groll_url_id = 15; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 7; amount of stages = 14; cooldown = 7.0
+19:01:00.238346: FAST_SEARCH. self.fast_weap_id = 2
+19:01:00.238346: got fast weapon. weapon = magistar
+19:01:00.238346: FAST_SEARCH: requesting BASE_WEAPONS_URL + magistar, i = 0
+19:01:08.257519: last_api_updae = 19:00:04.211672
+19:01:08.268953: got 500 auctions. mode: FAST_SEARCH
+19:01:08.356982: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 3; good_weapons_id = 12; groll_url_id = 15; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 8; amount of stages = 14; cooldown = 7.0
+19:01:08.359467: FAST_SEARCH. self.fast_weap_id = 3
+19:01:08.359467: got fast weapon. weapon = burston
+19:01:08.359467: FAST_SEARCH: requesting BASE_WEAPONS_URL + burston, i = 0
+19:01:16.214279: last_api_updae = 19:00:04.211672
+19:01:16.224190: got 500 auctions. mode: FAST_SEARCH
+19:01:16.227706: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 4; good_weapons_id = 12; groll_url_id = 15; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 9; amount of stages = 14; cooldown = 7.0
+19:01:16.230170: requesting GROLL
+19:01:23.911778: last_api_updae = 19:00:04.211672
+19:01:23.915745: got 33 auctions. mode: GROLL
+19:01:23.922776: starting writing to GROLL DB data for latron; amount of auctions: 33
+19:01:24.196033: writing to DB groll data for latroncritical_damagefire_rate_/_attack_speedmultishot
+19:01:24.196033: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 12; groll_url_id = 16; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 10; amount of stages = 14; cooldown = 7.0
+19:01:24.199505: requesting GROLL
+19:01:31.667638: last_api_updae = 19:00:04.211672
+19:01:31.668134: got 25 auctions. mode: GROLL
+19:01:31.673095: starting writing to GROLL DB data for latron; amount of auctions: 25
+19:01:31.969519: writing to DB groll data for latroncritical_damagemultishottoxin_damage
+19:01:31.969519: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 12; groll_url_id = 17; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 11; amount of stages = 14; cooldown = 7.0
+19:01:31.971518: requesting GROLL
+19:01:39.781163: last_api_updae = 19:00:04.211672
+19:01:39.782156: got 33 auctions. mode: GROLL
+19:01:39.788601: starting writing to GROLL DB data for magistar; amount of auctions: 33
+19:01:40.074443: writing to DB groll data for magistarcritical_chancecritical_damagefire_rate_/_attack_speed
+19:01:40.074443: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 12; groll_url_id = 18; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 12; amount of stages = 14; cooldown = 7.0
+19:01:40.078411: requesting GROLL
+19:01:47.572133: last_api_updae = 19:00:04.211672
+19:01:47.573124: got 23 auctions. mode: GROLL
+19:01:47.578085: starting writing to GROLL DB data for magistar; amount of auctions: 23
+19:01:47.765566: writing to DB groll data for magistarbase_damage_/_melee_damagecritical_damagefire_rate_/_attack_speed
+19:01:47.765566: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 12; groll_url_id = 19; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 13; amount of stages = 14; cooldown = 7.0
+19:01:47.768542: requesting GROLL
+19:01:55.276207: last_api_updae = 19:00:04.211672
+19:01:55.277198: got 5 auctions. mode: GROLL
+19:01:55.277692: starting writing to GROLL DB data for magistar; amount of auctions: 5
+19:01:55.309648: writing to DB groll data for magistarchanneling_damagecritical_damagefire_rate_/_attack_speed
+19:01:55.309648: mode changes to BASE_API because 110s passed; lastcall = 1781539315.2762074s
+19:01:55.310144: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 12; groll_url_id = 20; mode = BASE_API; firstRun = False; sync_needed = False; turned_off = False; stage_id = 14; amount of stages = 14; cooldown = 3.0
+19:01:55.315691: requesting API_AUCTIONS; mode = BASE_API
+19:01:58.985480: last_api_updae = 19:00:04.211672
+19:01:58.986970: got 100 auctions. mode: BASE_API
+19:01:58.988954: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 12; groll_url_id = 20; mode = BASE_API; firstRun = False; sync_needed = False; turned_off = False; stage_id = 14; amount of stages = 14; cooldown = 3.0
+19:01:58.991929: requesting API_AUCTIONS; mode = BASE_API
+19:02:02.834872: last_api_updae = 19:00:04.211672
+19:02:02.836855: got 100 auctions. mode: BASE_API
+19:02:02.838345: api update detected. sync aquired. last_call = 1781539322.8348718s
+19:02:02.838345: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 12; groll_url_id = 20; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 0; amount of stages = 14; cooldown = 7.0
+19:02:02.840822: getting weapon_for_db. good_weapons_id = 12
+19:02:02.840822: got weapon_for_db. weapon_for_db = vectis
+19:02:02.840822: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + vectis, i = 0
+19:02:10.855050: last_api_updae = 19:02:02.838345
+19:02:10.871438: got 499 auctions. mode: WEAPON_FOR_DB_SEARCH
+19:02:10.871438: starting writing to DB data for vectis; amount of auctions: 499
+19:02:10.871438: writing to DB data: [99, 100, 105] || for time: 1781539330
+19:02:10.883079: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 13; groll_url_id = 20; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 1; amount of stages = 14; cooldown = 7.0
+19:02:10.888558: getting weapon_for_db. good_weapons_id = 0
+19:02:10.888558: got weapon_for_db. weapon_for_db = torid
+19:02:10.888558: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + torid, i = 0
+19:02:18.789326: last_api_updae = 19:02:02.838345
+19:02:18.807810: got 500 auctions. mode: WEAPON_FOR_DB_SEARCH
+19:02:18.807810: starting writing to DB data for torid; amount of auctions: 500
+19:02:18.807810: writing to DB data: [425, 450, 465] || for time: 1781539338
+19:02:18.819662: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 1; groll_url_id = 20; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 2; amount of stages = 14; cooldown = 7.0
+19:02:18.822635: getting weapon_for_db. good_weapons_id = 1
+19:02:18.822635: got weapon_for_db. weapon_for_db = dual_toxocyst
+19:02:18.823133: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + dual_toxocyst, i = 0
+19:02:26.882370: last_api_updae = 19:02:02.838345
+19:02:27.060944: got 500 auctions. mode: WEAPON_FOR_DB_SEARCH
+19:02:27.060944: starting writing to DB data for dual_toxocyst; amount of auctions: 500
+19:02:27.061439: writing to DB data: [244, 245, 245] || for time: 1781539347
+19:02:27.101353: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 2; groll_url_id = 20; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 3; amount of stages = 14; cooldown = 7.0
+19:02:27.103337: requesting GROLL
+19:02:34.776010: last_api_updae = 19:02:02.838345
+19:02:34.778494: got 21 auctions. mode: GROLL
+19:02:34.785435: starting writing to GROLL DB data for magistar; amount of auctions: 21
+19:02:35.140204: writing to DB groll data for magistarcritical_damagefire_rate_/_attack_speedrange
+19:02:35.140204: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 2; groll_url_id = 21; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 4; amount of stages = 14; cooldown = 7.0
+19:02:35.142869: requesting GROLL
+19:02:42.646976: last_api_updae = 19:02:02.838345
+19:02:42.653016: got 205 auctions. mode: GROLL
+19:02:42.665587: starting writing to GROLL DB data for torid; amount of auctions: 205
+19:02:44.721583: writing to DB groll data for toridcritical_chancecritical_damagemultishot
+19:02:44.722575: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 2; groll_url_id = 1; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 5; amount of stages = 14; cooldown = 7.0
+19:02:44.726552: FAST_SEARCH. self.fast_weap_id = 0
+19:02:44.726552: got fast weapon. weapon = torid
+19:02:44.726552: FAST_SEARCH: requesting BASE_WEAPONS_URL + torid, i = 0
+19:02:50.673924: last_api_updae = 19:02:02.838345
+19:02:50.685598: got 500 auctions. mode: FAST_SEARCH
+19:02:50.690249: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 1; good_weapons_id = 2; groll_url_id = 1; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 6; amount of stages = 14; cooldown = 7.0
+19:02:50.693243: FAST_SEARCH. self.fast_weap_id = 1
+19:02:50.693243: got fast weapon. weapon = verglas
+19:02:50.693243: FAST_SEARCH: requesting BASE_WEAPONS_URL + verglas, i = 0
+19:02:58.772085: last_api_updae = 19:02:02.838345
+19:02:58.786617: got 500 auctions. mode: FAST_SEARCH
+19:02:58.790116: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 2; good_weapons_id = 2; groll_url_id = 1; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 7; amount of stages = 14; cooldown = 7.0
+19:02:58.794150: FAST_SEARCH. self.fast_weap_id = 2
+19:02:58.794150: got fast weapon. weapon = magistar
+19:02:58.794646: FAST_SEARCH: requesting BASE_WEAPONS_URL + magistar, i = 0
+19:03:06.826238: last_api_updae = 19:02:02.838345
+19:03:06.838249: got 500 auctions. mode: FAST_SEARCH
+19:03:06.922358: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 3; good_weapons_id = 2; groll_url_id = 1; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 8; amount of stages = 14; cooldown = 7.0
+19:03:06.925361: FAST_SEARCH. self.fast_weap_id = 3
+19:03:06.925361: got fast weapon. weapon = burston
+19:03:06.925361: FAST_SEARCH: requesting BASE_WEAPONS_URL + burston, i = 0
+19:03:14.763078: last_api_updae = 19:02:02.838345
+19:03:14.777469: got 500 auctions. mode: FAST_SEARCH
+19:03:14.786087: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 4; good_weapons_id = 2; groll_url_id = 1; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 9; amount of stages = 14; cooldown = 7.0
+19:03:14.790060: requesting GROLL
+19:03:22.557497: last_api_updae = 19:02:02.838345
+19:03:22.560968: got 85 auctions. mode: GROLL
+19:03:22.564935: starting writing to GROLL DB data for torid; amount of auctions: 85
+19:03:23.316048: writing to DB groll data for toridbase_damage_/_melee_damagecritical_damagemultishot
+19:03:23.316547: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 2; groll_url_id = 2; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 10; amount of stages = 14; cooldown = 7.0
+19:03:23.320211: requesting GROLL
+19:03:30.325294: last_api_updae = 19:02:02.838345
+19:03:30.326783: got 47 auctions. mode: GROLL
+19:03:30.333230: starting writing to GROLL DB data for torid; amount of auctions: 47
+19:03:30.872743: writing to DB groll data for toridcritical_damagefire_rate_/_attack_speedmultishot
+19:03:30.873752: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 2; groll_url_id = 3; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 11; amount of stages = 14; cooldown = 7.0
+19:03:30.877766: requesting GROLL
+19:03:38.051561: last_api_updae = 19:02:02.838345
+19:03:38.053051: got 65 auctions. mode: GROLL
+19:03:38.059498: starting writing to GROLL DB data for torid; amount of auctions: 65
+19:03:38.831596: writing to DB groll data for toridcritical_damagemultishottoxin_damage
+19:03:38.831596: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 2; groll_url_id = 4; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 12; amount of stages = 14; cooldown = 7.0
+19:03:38.834578: requesting GROLL
+19:03:45.839240: last_api_updae = 19:02:02.838345
+19:03:45.852140: got 115 auctions. mode: GROLL
+19:03:45.852633: starting writing to GROLL DB data for dual_toxocyst; amount of auctions: 115
+19:03:47.661702: writing to DB groll data for dual_toxocystcritical_chancecritical_damagemultishot
+19:03:47.662711: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 2; groll_url_id = 5; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 13; amount of stages = 14; cooldown = 7.0
+19:03:47.666721: requesting GROLL
+19:03:53.585560: last_api_updae = 19:02:02.838345
+19:03:53.588041: got 45 auctions. mode: GROLL
+19:03:53.593001: starting writing to GROLL DB data for dual_toxocyst; amount of auctions: 45
+19:03:54.184999: writing to DB groll data for dual_toxocystbase_damage_/_melee_damagecritical_damagemultishot
+19:03:54.185495: mode changes to BASE_API because 110s passed; lastcall = 1781539433.5855603s
+19:03:54.185988: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 2; groll_url_id = 6; mode = BASE_API; firstRun = False; sync_needed = False; turned_off = False; stage_id = 14; amount of stages = 14; cooldown = 3.0
+19:03:54.189964: requesting API_AUCTIONS; mode = BASE_API
+19:03:57.441762: last_api_updae = 19:02:02.838345
+19:03:57.444737: got 100 auctions. mode: BASE_API
+19:03:57.446723: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 2; groll_url_id = 6; mode = BASE_API; firstRun = False; sync_needed = False; turned_off = False; stage_id = 14; amount of stages = 14; cooldown = 3.0
+19:03:57.449697: requesting API_AUCTIONS; mode = BASE_API
+19:04:01.141171: last_api_updae = 19:02:02.838345
+19:04:01.144642: got 100 auctions. mode: BASE_API
+19:04:01.145137: api update detected. sync aquired. last_call = 1781539441.1406753s
+19:04:01.145633: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 2; groll_url_id = 6; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 0; amount of stages = 14; cooldown = 7.0
+19:04:01.147124: getting weapon_for_db. good_weapons_id = 2
+19:04:01.147124: got weapon_for_db. weapon_for_db = ocucor
+19:04:01.147124: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + ocucor, i = 0
+19:04:09.248876: last_api_updae = 19:04:01.145633
+19:04:09.258795: got 500 auctions. mode: WEAPON_FOR_DB_SEARCH
+19:04:09.258795: starting writing to DB data for ocucor; amount of auctions: 500
+19:04:09.259291: writing to DB data: [280, 290, 295] || for time: 1781539449
+19:04:09.267763: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 3; groll_url_id = 6; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 1; amount of stages = 14; cooldown = 7.0
+19:04:09.270740: getting weapon_for_db. good_weapons_id = 3
+19:04:09.270740: got weapon_for_db. weapon_for_db = bo
+19:04:09.271236: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + bo, i = 0
+19:04:17.249263: last_api_updae = 19:04:01.145633
+19:04:17.260353: got 500 auctions. mode: WEAPON_FOR_DB_SEARCH
+19:04:17.267399: starting writing to DB data for bo; amount of auctions: 500
+19:04:17.267399: writing to DB data: [228, 230, 240] || for time: 1781539457
+19:04:17.278651: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 4; groll_url_id = 6; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 2; amount of stages = 14; cooldown = 7.0
+19:04:17.281363: getting weapon_for_db. good_weapons_id = 4
+19:04:17.281363: got weapon_for_db. weapon_for_db = magistar
+19:04:17.281363: WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + magistar, i = 0
+19:04:25.264670: last_api_updae = 19:04:01.145633
+19:04:25.284476: got 500 auctions. mode: WEAPON_FOR_DB_SEARCH
+19:04:25.284476: starting writing to DB data for magistar; amount of auctions: 500
+19:04:25.284973: writing to DB data: [625, 640, 650] || for time: 1781539465
+19:04:25.378959: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 5; groll_url_id = 6; mode = WEAPON_FOR_DB_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 3; amount of stages = 14; cooldown = 7.0
+19:04:25.381450: requesting GROLL
+19:04:33.031745: last_api_updae = 19:04:01.145633
+19:04:33.036705: got 32 auctions. mode: GROLL
+19:04:33.037201: starting writing to GROLL DB data for dual_toxocyst; amount of auctions: 32
+19:04:33.307232: writing to DB groll data for dual_toxocystcritical_damagefire_rate_/_attack_speedmultishot
+19:04:33.307232: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 5; groll_url_id = 7; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 4; amount of stages = 14; cooldown = 7.0
+19:04:33.310264: requesting GROLL
+19:04:40.730521: last_api_updae = 19:04:01.145633
+19:04:40.732509: got 60 auctions. mode: GROLL
+19:04:40.738457: starting writing to GROLL DB data for dual_toxocyst; amount of auctions: 60
+19:04:41.307345: writing to DB groll data for dual_toxocystcritical_damagemultishotpunch_through
+19:04:41.307838: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 5; groll_url_id = 8; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 5; amount of stages = 14; cooldown = 7.0
+19:04:41.310815: FAST_SEARCH. self.fast_weap_id = 0
+19:04:41.310815: got fast weapon. weapon = torid
+19:04:41.310815: FAST_SEARCH: requesting BASE_WEAPONS_URL + torid, i = 0
+19:04:48.799588: last_api_updae = 19:04:01.145633
+19:04:48.810107: got 500 auctions. mode: FAST_SEARCH
+19:04:48.814232: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 1; good_weapons_id = 5; groll_url_id = 8; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 6; amount of stages = 14; cooldown = 7.0
+19:04:48.815722: FAST_SEARCH. self.fast_weap_id = 1
+19:04:48.815722: got fast weapon. weapon = verglas
+19:04:48.815722: FAST_SEARCH: requesting BASE_WEAPONS_URL + verglas, i = 0
+19:04:56.777517: last_api_updae = 19:04:01.145633
+19:04:56.787965: got 500 auctions. mode: FAST_SEARCH
+19:04:56.792987: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 2; good_weapons_id = 5; groll_url_id = 8; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 7; amount of stages = 14; cooldown = 7.0
+19:04:56.795680: FAST_SEARCH. self.fast_weap_id = 2
+19:04:56.796175: got fast weapon. weapon = magistar
+19:04:56.796175: FAST_SEARCH: requesting BASE_WEAPONS_URL + magistar, i = 0
+19:05:04.907344: last_api_updae = 19:04:01.145633
+19:05:04.921989: got 500 auctions. mode: FAST_SEARCH
+19:05:05.005767: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 3; good_weapons_id = 5; groll_url_id = 8; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 8; amount of stages = 14; cooldown = 7.0
+19:05:05.009782: FAST_SEARCH. self.fast_weap_id = 3
+19:05:05.009782: got fast weapon. weapon = burston
+19:05:05.009782: FAST_SEARCH: requesting BASE_WEAPONS_URL + burston, i = 0
+19:05:13.077700: last_api_updae = 19:04:01.145633
+19:05:13.089440: got 500 auctions. mode: FAST_SEARCH
+19:05:13.093509: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 4; good_weapons_id = 5; groll_url_id = 8; mode = FAST_SEARCH; firstRun = False; sync_needed = False; turned_off = False; stage_id = 9; amount of stages = 14; cooldown = 7.0
+19:05:13.097001: requesting GROLL
+19:05:20.933059: last_api_updae = 19:04:01.145633
+19:05:20.935043: got 21 auctions. mode: GROLL
+19:05:20.940003: starting writing to GROLL DB data for dual_toxocyst; amount of auctions: 21
+19:05:21.196591: writing to DB groll data for dual_toxocystcritical_damagemultishotstatus_chance
+19:05:21.196591: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 5; groll_url_id = 9; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 10; amount of stages = 14; cooldown = 7.0
+19:05:21.198576: requesting GROLL
+19:05:28.652767: last_api_updae = 19:04:01.145633
+19:05:28.655245: got 116 auctions. mode: GROLL
+19:05:28.659214: starting writing to GROLL DB data for burston; amount of auctions: 116
+19:05:29.743897: writing to DB groll data for burstoncritical_chancecritical_damagemultishot
+19:05:29.744395: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 5; groll_url_id = 10; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 11; amount of stages = 14; cooldown = 7.0
+19:05:29.747368: requesting GROLL
+19:05:36.315224: last_api_updae = 19:04:01.145633
+19:05:36.316215: got 60 auctions. mode: GROLL
+19:05:36.321672: starting writing to GROLL DB data for burston; amount of auctions: 60
+19:05:36.859964: writing to DB groll data for burstonbase_damage_/_melee_damagecritical_damagemultishot
+19:05:36.859964: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 5; groll_url_id = 11; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 12; amount of stages = 14; cooldown = 7.0
+19:05:36.863975: requesting GROLL
+19:05:44.005903: last_api_updae = 19:04:01.145633
+19:05:44.006894: got 57 auctions. mode: GROLL
+19:05:44.012353: starting writing to GROLL DB data for burston; amount of auctions: 57
+19:05:44.602021: writing to DB groll data for burstoncritical_damagefire_rate_/_attack_speedmultishot
+19:05:44.602021: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 5; groll_url_id = 12; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 13; amount of stages = 14; cooldown = 7.0
+19:05:44.605525: requesting GROLL
+19:06:31.855330: starting iteration with following parameters: groll_url_len = 21; good_weapons_len = 13; fast_weapons_length = 4; fast_weap_id = 0; good_weapons_id = 5; groll_url_id = 12; mode = GROLL; firstRun = False; sync_needed = False; turned_off = False; stage_id = 13; amount of stages = 14; cooldown = 7.0
+19:06:31.855826: requesting GROLL

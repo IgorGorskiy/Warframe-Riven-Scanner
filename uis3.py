@@ -461,6 +461,74 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_7.addLayout(self.horizontalLayout_10)
 
+        self.label_14 = QLabel(self.tab_5)
+        self.label_14.setObjectName(u"label_14")
+
+        self.verticalLayout_7.addWidget(self.label_14)
+
+        self.horizontalLayout_11 = QHBoxLayout()
+        self.horizontalLayout_11.setObjectName(u"horizontalLayout_11")
+        self.label_15 = QLabel(self.tab_5)
+        self.label_15.setObjectName(u"label_15")
+
+        self.horizontalLayout_11.addWidget(self.label_15)
+
+        self.LoginInput = QLineEdit(self.tab_5)
+        self.LoginInput.setObjectName(u"LoginInput")
+        self.LoginInput.setMaximumSize(QSize(200, 16777215))
+
+        self.horizontalLayout_11.addWidget(self.LoginInput)
+
+        self.label_16 = QLabel(self.tab_5)
+        self.label_16.setObjectName(u"label_16")
+
+        self.horizontalLayout_11.addWidget(self.label_16)
+
+        self.PasswordInput = QLineEdit(self.tab_5)
+        self.PasswordInput.setObjectName(u"PasswordInput")
+        self.PasswordInput.setMaximumSize(QSize(200, 16777215))
+
+        self.horizontalLayout_11.addWidget(self.PasswordInput)
+
+        self.label_17 = QLabel(self.tab_5)
+        self.label_17.setObjectName(u"label_17")
+
+        self.horizontalLayout_11.addWidget(self.label_17)
+
+        self.NicknameInput = QLineEdit(self.tab_5)
+        self.NicknameInput.setObjectName(u"NicknameInput")
+        self.NicknameInput.setMaximumSize(QSize(200, 16777215))
+
+        self.horizontalLayout_11.addWidget(self.NicknameInput)
+
+        self.SaveMarketAccountData = QPushButton(self.tab_5)
+        self.SaveMarketAccountData.setObjectName(u"SaveMarketAccountData")
+
+        self.horizontalLayout_11.addWidget(self.SaveMarketAccountData)
+
+        self.horizontalSpacer_4 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout_11.addItem(self.horizontalSpacer_4)
+
+
+        self.verticalLayout_7.addLayout(self.horizontalLayout_11)
+
+        self.horizontalLayout_12 = QHBoxLayout()
+        self.horizontalLayout_12.setObjectName(u"horizontalLayout_12")
+        self.ensureAccountDataBtn = QPushButton(self.tab_5)
+        self.ensureAccountDataBtn.setObjectName(u"ensureAccountDataBtn")
+
+        self.horizontalLayout_12.addWidget(self.ensureAccountDataBtn)
+
+        self.accountDataStasusDisplay = QLineEdit(self.tab_5)
+        self.accountDataStasusDisplay.setObjectName(u"accountDataStasusDisplay")
+        self.accountDataStasusDisplay.setReadOnly(True)
+
+        self.horizontalLayout_12.addWidget(self.accountDataStasusDisplay)
+
+
+        self.verticalLayout_7.addLayout(self.horizontalLayout_12)
+
         self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_7.addItem(self.verticalSpacer)
@@ -522,6 +590,12 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"\u041d\u043e\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0441\u043a\u0430\u043d\u0430", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), QCoreApplication.translate("MainWindow", u"\u041b\u043e\u0433\u0438", None))
         self.label_13.setText(QCoreApplication.translate("MainWindow", u"\u0413\u0440\u043e\u043c\u043a\u043e\u0441\u0442\u044c \u0434\u043e\u043b\u0431\u0451\u0436\u043a\u0438 \u0424\u0440\u0438\u0440\u0435\u043d", None))
+        self.label_14.setText(QCoreApplication.translate("MainWindow", u"\u0414\u0430\u043d\u043d\u044b\u0435 \u0434\u043b\u044f \u0440\u0430\u0431\u043e\u0442\u044b \u0441\u0432\u0438\u043d\u043a\u0438. \u041b\u043e\u0433\u0438\u043d - \u043f\u043e\u0447\u0442\u0430, \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u043c\u0430\u044f \u0434\u043b\u044f \u0432\u0445\u043e\u0434\u0430 \u043d\u0430 \u043c\u0430\u0440\u043a\u0435\u0442. \u041d\u0438\u043a\u043d\u0435\u0439\u043c \u0436\u0435\u043b\u0430\u0442\u0435\u043b\u044c\u043d\u043e \u0431\u0440\u0430\u0442\u044c \u0438\u0437 \u0441\u0441\u044b\u043b\u043a\u0438 \u043d\u0430 \u0441\u0432\u043e\u0439 \u043f\u0440\u043e\u0444\u0438\u043b\u044c \u043c\u0430\u0440\u043a\u0435\u0442\u0430.", None))
+        self.label_15.setText(QCoreApplication.translate("MainWindow", u"\u041b\u043e\u0433\u0438\u043d:", None))
+        self.label_16.setText(QCoreApplication.translate("MainWindow", u"\u041f\u0430\u0440\u043e\u043b\u044c:", None))
+        self.label_17.setText(QCoreApplication.translate("MainWindow", u"\u041d\u0438\u043a\u043d\u0435\u0439\u043c:", None))
+        self.SaveMarketAccountData.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0435", None))
+        self.ensureAccountDataBtn.setText(QCoreApplication.translate("MainWindow", u"\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u0432\u0432\u0435\u0434\u0451\u043d\u043d\u044b\u0445 \u0434\u0430\u043d\u043d\u044b\u0445", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), QCoreApplication.translate("MainWindow", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b", None))
     # retranslateUi
 
