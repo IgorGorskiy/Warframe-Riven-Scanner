@@ -83,17 +83,6 @@ class MarketAPI:
         )
         data = r.json()
         return data.get("data", [])
-    
-    def get_orders_by_nickname(self, nickname):
-        r = self.session.get(
-            "https://api.warframe.market/v2/profile/" + nickname + "/orders",
-            headers=self._headers()
-        )
-        print("https://api.warframe.market/v2/profile/" + nickname + "/orders")
-        if r.status_code != 200:
-            return {}
-        data = r.json()
-        return data.get("data", [])
 
     def update_price(self, order_id, price):
         r = self.session.patch(

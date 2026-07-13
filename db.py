@@ -3,8 +3,6 @@ import sqlite3
 import json
 import os
 from typing import List, Tuple
-from pymongo import MongoClient
-from pymongo.errors import DuplicateKeyError
 
 from datetime import datetime, time, date, timezone, timedelta
 import time
@@ -212,6 +210,7 @@ class RivenDatabase:
             return [t, prices]
         except Exception as e:
             print ("get_price_history failed")
+            return [[],[]]
 
     def get_sold_rivens(self, product: str):
         try:
@@ -434,3 +433,393 @@ class PodRollDB:
         """)
 
         return self.cursor.fetchone()
+    
+
+class SuperDatabase:
+    class Statuses:
+        online = "online"
+        ingame = "ingame"
+        offline = "offline"
+        visible = "visible"
+        # статус hidden может означать как удаление, так и сокрытие ривена
+        hidden = "hidden"
+
+    def __init__(self, path=None):
+        if path is None:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            path = os.path.join(base_dir, "super.db")
+        self.status_to_id = {}
+        self.id_to_status = {}
+        self.conn = sqlite3.connect(path, check_same_thread=False)
+        self.cursor = self.conn.cursor()
+        self._init_schema()
+        self.get_status_ids()
+
+    def get_status_ids(self):
+        self.cursor.execute(f"""
+            SELECT *
+            FROM statuses
+        """)
+        rows = self.cursor.fetchall()
+        if len(rows) < 5:
+            statuses_list = [self.Statuses.hidden, self.Statuses.offline,\
+                             self.Statuses.online, self.Statuses.ingame, self.Statuses.visible]
+            for status_name in statuses_list:
+                self.cursor.execute(f"""
+                    INSERT INTO statuses (status) VALUES (?)
+                """, (status_name,))
+                sql_id = self.cursor.lastrowid
+                self.status_to_id[status_name] = sql_id
+                self.id_to_status[sql_id] = status_name
+            self.conn.commit()
+        else:
+            for status_id, status in rows:
+                self.status_to_id[status] = status_id
+                self.id_to_status[status_id] = status
+
+    def _init_schema(self):
+        try:
+
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS attributes (
+                id INTEGER PRIMARY KEY,
+                name TEXT UNIQUE
+            )
+            """)
+
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS weapons (
+                id INTEGER PRIMARY KEY,
+                name TEXT UNIQUE
+            )
+            """)
+
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS owners (
+                id INTEGER PRIMARY KEY,
+                name TEXT UNIQUE
+            )
+            """)
+
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS rivens (
+                id INTEGER PRIMARY KEY,
+                riven_text_id TEXT,
+                weapon_id INTEGER,
+                price INTEGER,
+                created INTEGER NOT NULL,
+                owner_id INTEGER,
+                mod_rank INTEGER,
+                pos_value1 REAL,
+                pos_value2 REAL,
+                pos_value3 REAL,
+                neg_value REAL,
+                pos_name1 INTEGER,
+                pos_name2 INTEGER,
+                pos_name3 INTEGER,
+                neg_name INTEGER,
+                FOREIGN KEY(pos_name1, pos_name2, pos_name3, neg_name) REFERENCES attributes(id),
+                FOREIGN KEY(weapon_id) REFERENCES weapons(id),
+                FOREIGN KEY(owner_id) REFERENCES owners(id)
+            )
+            """)
+
+            self.conn.execute("""
+            CREATE INDEX IF NOT EXISTS att_idx
+            ON attributes (name)
+            """)
+
+            self.conn.execute("""
+            CREATE INDEX IF NOT EXISTS weapon_idx
+            ON weapons (name)
+            """)
+
+            self.conn.execute("""
+            CREATE INDEX IF NOT EXISTS owners_idx
+            ON owners (name)
+            """)
+
+            self.conn.execute("""
+            CREATE INDEX IF NOT EXISTS rivens_idx
+            ON rivens (riven_text_id, weapon_id, owner_id, pos_name1, pos_name2, pos_name3, neg_name)
+            """)
+
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS scan_params (
+                id INTEGER PRIMARY KEY,
+                hash INTEGER
+            )
+            """)
+
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS scan_timestamps (
+                id INTEGER PRIMARY KEY,
+                hash_id INTEGER,
+                time INTEGER,
+                FOREIGN KEY(hash_id) REFERENCES scan_params(id)
+            )
+            """)
+
+            self.conn.execute("""
+            CREATE INDEX IF NOT EXISTS hash_idx
+            ON scan_params (hash)
+            """)
+
+            self.conn.execute("""
+            CREATE INDEX IF NOT EXISTS scans_idx
+            ON scan_timestamps (hash_id, time)
+            """)
+
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS prev_scanned_rivens (
+                id INTEGER PRIMARY KEY,
+                hash_id INTEGER,
+                riven_id INTEGER,
+                FOREIGN KEY(hash_id) REFERENCES scan_params(id),
+                FOREIGN KEY(riven_id) REFERENCES rivens(id)
+            )
+            """)
+
+            self.conn.execute("""
+            CREATE INDEX IF NOT EXISTS prev_idx
+            ON prev_scanned_rivens (hash_id)
+            """)
+
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS statuses (
+                id INTEGER PRIMARY KEY,
+                status TEXT UNIQUE
+            )
+            """)
+
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS status_changes (
+                id INTEGER PRIMARY KEY,
+                riven_id INTEGER,
+                status_id INTEGER,
+                timestamp INTEGER,
+                FOREIGN KEY(status_id) REFERENCES statuses(id),
+                FOREIGN KEY(riven_id) REFERENCES rivens(id)
+            )
+            """)
+
+            self.conn.execute("""
+            CREATE INDEX IF NOT EXISTS st_ch_idx
+            ON status_changes (riven_id, timestamp)
+            """)
+
+            self.conn.commit()
+        except Exception as e:
+            print ("super db init failed")
+    
+    def get_id_from_field(self, value, table, field = "name"):
+        self.cursor.execute(f"""
+                SELECT id FROM {table} WHERE {field}=?
+            """, (value,))
+        row = self.cursor.fetchone()
+        sql_id = -1
+        if row is None:
+            # оружия нет — создаём
+            self.cursor.execute(f"""
+                INSERT INTO {table} ({field}) VALUES (?)
+            """, (value,))
+            sql_id = self.cursor.lastrowid
+            self.conn.commit()
+        else:
+            sql_id = row[0]
+        return sql_id
+    
+    def form_attributes_lists(self, item):
+        """Возвращает список имён аттрибутов и список значений аттрибутов
+        """
+        attributes = item["attributes"]
+        attr_dict = {}
+        attr_list = []
+        neg_att = "none"
+        neg_val = 0
+        for att in attributes:
+            if att["positive"]:
+                attr_dict[att["url_name"]] = att["value"]
+                attr_list.append(att["url_name"])
+            else:
+                neg_att = att["url_name"]
+                neg_val = att["value"]
+        attr_list.sort()
+        if len(attr_list) < 3:
+            attr_list.append("none")
+            attr_dict["none"] = 0
+        attr_list.append(neg_att)
+        attr_dict[neg_att] = neg_val
+        names = attr_list
+        values = []
+        for elem in attr_list:
+            values.append(attr_dict[elem])
+        if len(values) !=4:
+            print(f"error forming attributes list: len = {len(values)}")
+        return names, values
+    
+    def get_attributes_ids(self, att_names):
+        ids = []
+        for name in att_names:
+            att_id = self.get_id_from_field(name, "attributes")
+            ids.append(att_id)
+        return ids
+    
+    def get_latest_search_timestamp(self, search_hash):
+        hash_id = self.get_id_from_field(search_hash, "scan_params", "hash")
+        try:
+            # Получаем таймстампы
+            self.cursor.execute("""
+                SELECT time
+                FROM scan_timestamps
+                WHERE hash_id=?
+                ORDER BY time ASC
+            """, (hash_id,))
+            rows = self.cursor.fetchall()
+            if len(rows) < 1:
+                return None
+            return rows[-1][0]
+        except Exception as e:
+            print ("get_latest_search_timestamp failed", e)
+            return None
+        
+    def get_previous_rivens_ids(self, search_hash):
+        """Возвращает sql-id ривенов из предыдущего запроса (для отслеживания исчезнувших)
+        """
+        hash_id = self.get_id_from_field(search_hash, "scan_params", "hash")
+        try:
+            # Получаем sql-id ривенов
+            self.cursor.execute("""
+                SELECT riven_id
+                FROM prev_scanned_rivens
+                WHERE hash_id=?
+            """, (hash_id,))
+            rows = self.cursor.fetchall()
+            if len(rows) < 1 or rows is None:
+                return []
+            rivens_ids = []
+            for r_id in rows:
+                rivens_ids.append(r_id)
+            return rivens_ids
+        except Exception as e:
+            print ("get_latest_search_timestamp failed", e)
+            return None
+
+    def process_rivens_from_requester(self, auctions, search_hash):
+        ids = self.get_previous_rivens_ids(search_hash)
+        prev_timestamp = self.get_latest_search_timestamp(search_hash)
+        # cначала эубрабатываем все пришедшие аукционы, а уже затем смотрим, какие ауки пропали
+        for auction in auctions:
+            r_id = self.process_riven(auction, prev_timestamp)
+
+    def iso_to_timestamp(self, iso_str):
+        dt = datetime.fromisoformat(iso_str)
+        timestamp = dt.timestamp()
+        return timestamp
+    
+    def get_current_statuses(self, riven_id):
+        self.cursor.execute("""
+            SELECT status_id, timestamp
+            FROM prev_scanned_rivens
+            WHERE riven_id=?
+            ORDER BY timestamp ASC
+        """, (riven_id,))
+        rows = self.cursor.fetchall()
+        owner_statuses = [self.Statuses.ingame, self.Statuses.offline, self.Statuses.online]
+        riven_statuses = [self.Statuses.hidden, self.Statuses.visible]
+        owner_ts = 0
+        riven_ts = 0
+        online_status = None
+        visibility_status = None
+        for status_id, ts in rows:
+            if self.id_to_status[status_id] in owner_statuses and ts > owner_ts:
+                owner_ts = ts
+                online_status = self.id_to_status[status_id]
+            elif self.id_to_status[status_id] in riven_statuses and ts > riven_ts:
+                riven_ts = ts
+                visibility_status = self.id_to_status[status_id]
+        return online_status, visibility_status
+    
+    def update_current_riven_status(self, riven_id, status):
+        owner_statuses = [self.Statuses.ingame, self.Statuses.offline, self.Statuses.online]
+        riven_statuses = [self.Statuses.hidden, self.Statuses.visible]
+        if (not status in owner_statuses) and (not status in riven_statuses):
+            print(f"incorrect status in update_current_riven_status: {status}")
+            return
+        #сначала получаем текущие статусы
+        online_status, visibility_status = self.get_current_statuses(riven_id)
+        if status == online_status or status == visibility_status:
+            return
+        
+    def insert_riven(self, auction):
+        riven_text_id = auction["id"]
+        item = auction["item"]
+        weapon = item["weapon"]
+        owner_item = auction["owner"]
+        owner = owner_item["ingame_name"]
+        price = auction["buyout_price"]
+        mod_rank = int(item["mod_rank"])
+        if price is None:
+            price = 999999
+        weapon_id = self.get_id_from_field(weapon, "weapons")
+        owner_id = self.get_id_from_field(owner, "owners")
+        att_names, att_values = self.form_attributes_lists(item)
+        att_ids = self.get_attributes_ids(att_names)
+        updated = int(self.iso_to_timestamp(auction["updated"]))
+        created = int(self.iso_to_timestamp(auction["created"]))
+
+        already_existed = False
+
+        self.cursor.execute(f"""
+            SELECT *
+            FROM rivens
+            WHERE riven_text_id=?
+            ORDER BY timestamp
+        """, (riven_text_id))
+        row = self.cursor.fetchone()
+        riven_id = -1
+        if row is None:
+            # ривена нет - создаём
+            self.cursor.execute("""
+                INSERT INTO rivens (riven_text_id, weapon_id, price, created, owner_id, mod_rank, pos_value1, pos_value2, pos_value3, neg_value, pos_name1, pos_name2, pos_name3, neg_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (riven_text_id, weapon_id, price, created, owner_id, mod_rank, att_values[0], att_values[1], att_values[2], att_values[3], att_ids[0], att_ids[1], att_ids[2], att_ids[3]))
+            riven_id = self.cursor.lastrowid
+            self.conn.commit()
+        else:
+            already_existed = True
+            riven_id = row[0]
+        # вставили ривен в БД, чиназес. Осталось проверить на изменения ривен, если он уже был в БД.
+        # но начнём с обработки случая, когда ривен новый.
+        if not already_existed:
+            # нужно добавить заметки о появлении онлайн и о видимости
+            self.update_current_riven_status(riven_id, self.Statuses.visible)
+
+
+    def process_riven(self, auction, latest_search_timestamp):
+        #эта функция может стать неиспользуемой из-за insert_riven
+        try:
+            item = auction["item"]
+            weapon = item["weapon"]
+            owner_item = auction["owner"]
+            owner = owner_item["ingame_name"]
+            weapon_id = self.get_id_from_field(weapon, "weapons")
+            owner_id = self.get_id_from_field(owner, "owners")
+            att_names, att_values = self.form_attributes_lists(item)
+            att_ids = self.get_attributes_ids(att_names)
+            # все данные для вставки в таблицу rivens есть.
+            # теперь нужно: 1) сравнить дату обновления на маркете с датой последней проверки. 
+            # 2) Если дата последней проверки позже - не добавляем ривен в БД, отслеживаем изменение статуса.
+            #    Важно обработать случай, когда дата последней проверки позже, но ривена нет в БД (мог быть невидимым)
+            #    Иначе - добавляем/заменяем данные о ривене, стираем всю инфу из таблиц отслеживания статусов (если заменяем ривен)
+            # Про отслеживание ривена:
+            # Если ривен новый - добавляем заметку о появлении ривена, о появлении онлайн
+            # Если ривен уже есть - проверяем последние статусы онлайна и существования, делаем заметку при несовпадении с текущими статусами
+            # Данный метод не отслеживает исчезновение ривена - это должен делать метод на ступень выше
+
+            # 0) Делаем поп-ытку добавить ривен в БД.
+
+            # 1) дата обновления ривена
+            updated = self.iso_to_timestamp(auction["updated"])
+
+        except Exception as e:
+            print ("super db init failed")

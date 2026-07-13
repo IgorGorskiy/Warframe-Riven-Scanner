@@ -1,15 +1,9 @@
 // RivenAlertDelegate.qml
-// Делегат одной карточки ривена. Заменяет RivenAlertWidget.
-//
-// required property var alertItem — имя совпадает с ролью "alertItem"
-// в RivenListModel.roleNames(), поэтому ListView заполняет её автоматически.
-// Везде используется ?. (optional chaining, Qt 6 / Qt 5.15+) на случай
-// промежуточных состояний первичного рендера.
 
 import QtQuick
 import QtQuick.Layouts
 
-Rectangle {
+Item {
     id: root
 
     required property var alertItem
@@ -17,12 +11,19 @@ Rectangle {
     width:  parent ? parent.width : 500
     height: card.implicitHeight + 16
 
-    color:        Qt.rgba(0.12, 0.12, 0.19, 0.82)   // 82% — текст читаем, видео просвечивает
-    radius:       7
-    border.color: Qt.rgba(0.22, 0.22, 0.36, 0.9)
-    border.width: 1
+    // ── Фоновый прямоугольник: прозрачность только здесь ─────────
+    // opacity делегата (Item) используется анимацией add/displaced,
+    // поэтому альфу задаём только на этом дочернем Rectangle,
+    // чтобы они не перемножались.
+    Rectangle {
+        anchors.fill: parent
+        color:        Qt.rgba(0.12, 0.12, 0.19, 0.82)
+        radius:       7
+        border.color: Qt.rgba(0.22, 0.22, 0.36, 0.9)
+        border.width: 1
+    }
 
-    // ── Переиспользуемая кнопка (inline-компонент, Qt 5.15+) ─────
+    // ── Переиспользуемая кнопка ───────────────────────────────────
     component AlertButton: Rectangle {
         id: btn
         property alias text:        label.text
@@ -65,10 +66,9 @@ Rectangle {
         }
         spacing: 5
 
-        // ── Основной текст ───────────────────────────────────────
         Text {
             Layout.fillWidth: true
-            text:       root.alertItem?.mainHtml  ?? ""
+            text:       root.alertItem?.mainHtml ?? ""
             textFormat: Text.RichText
             wrapMode:   Text.Wrap
             color:      "#d0d3e0"
@@ -77,11 +77,10 @@ Rectangle {
             lineHeight:     1.25
         }
 
-        // ── Строка статов (только для good stats / manual / sold) ─
         Text {
             Layout.fillWidth: true
-            visible:    root.alertItem?.showStats  ?? false
-            text:       root.alertItem?.statsHtml  ?? ""
+            visible:    root.alertItem?.showStats ?? false
+            text:       root.alertItem?.statsHtml ?? ""
             textFormat: Text.RichText
             wrapMode:   Text.Wrap
             color:      "#d0d3e0"
@@ -89,7 +88,6 @@ Rectangle {
             font.pixelSize: 12
         }
 
-        // ── Кнопки ───────────────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
             spacing: 4

@@ -30,6 +30,7 @@ from datetime import datetime, timezone, timedelta
 from typing import List, Tuple
 from myplot import PricePlot
 from password_storage import CredentialsStorage
+from log_printer import LogPrinter, Log
 import pandas as pd
 import numpy as np
 
@@ -76,6 +77,7 @@ cur_dir = os.path.dirname(os.path.abspath(__file__))
 settings_path = os.path.join(cur_dir, "settings.json")
 blacklist_path = os.path.join(cur_dir, "pidors.json")
 groll_stats_path = os.path.join(cur_dir, "groll_stats.json")
+test_path = os.path.join(cur_dir, "test.json")
 
 #содержимое файла marketLogin.json должно выглядеть так:
 
@@ -86,7 +88,6 @@ groll_stats_path = os.path.join(cur_dir, "groll_stats.json")
 }
 
 #конец содержимого
-
 
 with open(settings_path) as f:
     settingsG = json.load(f)
@@ -216,15 +217,24 @@ def get_blacklist():
 def build_groll_urls(raw_stats):
     urls = []
     weapons = raw_stats.keys()
+    #weapons = ["torid"]
     for weapon in weapons:
         stats_for_weapon = raw_stats[weapon]
         var_stats = stats_for_weapon["var"]
         const_stats:list = stats_for_weapon["const"]
         for var_stat in var_stats:
-            pos_stats = const_stats.copy()
-            pos_stats.append(var_stat)
-            url = build_URL(pos_stats, weapon)
-            urls.append(url)
+             pos_stats = const_stats.copy()
+             pos_stats.append(var_stat)
+             url = build_URL(pos_stats, weapon)
+             urls.append(url)
+        # for var_stat in ALL_STATS:
+        #     if var_stat in const_stats or var_stat == "any":
+        #         continue
+        #     pos_stats = const_stats.copy()
+        #     pos_stats.append(var_stat)
+        #     url = build_URL(pos_stats, weapon)
+        #     urls.append(url)
+    print (f"amount of groll urls: {len(urls)}")
     return urls
 
 groll_urls_g = build_groll_urls(groll_raw_stats)
@@ -321,7 +331,6 @@ def is_riven_pod_roll(auction):
     if item.get("type") != "riven":
         return False
     updated = auction.get("updated")
-    re_rolls = item.get("re_rolls", 0)
     weapon = item.get("weapon_url_name")
     if minutes_since_updated(updated) > 4:
         return False
@@ -426,60 +435,6 @@ def are_stats_good(auction):
 # =========================
 # WORKER THREAD
 # =========================
-
-class LogPrinter(QObject):
-    new_log = Signal(str)
-
-    def __init__(self):
-        super().__init__()
-
-    def emit_text(self, text):
-        self.new_log.emit(text)
-
-log_printer = LogPrinter()
-
-class Log(QThread):
-    logs:list = list()
-    visible_logs:list = list()
-    altvLogs:list = list()
-    workerLogs:list = list()
-    new_log = Signal(str)
-
-    @staticmethod
-    def log_write(text, logs=None, logs_to_show=None):
-        if logs is None:
-            logs = Log.logs
-
-        if logs_to_show is None:
-            logs_to_show = Log.visible_logs
-
-        while len(logs) > 500:
-            logs.pop(0)
-
-        while len(logs_to_show) > 50:
-            logs_to_show.pop(0)
-
-        now = datetime.fromtimestamp(time.time()).time()
-
-        logs_to_show.append(f"{now}: {text}")
-        logs.append(f"{now}: {text}")
-
-        full_text = "\n".join(logs_to_show)
-        log_printer.emit_text(full_text)
-    
-    def log_print(logs = logs):
-        print ("LOGS:")
-        print(QDateTime.currentDateTime().toString())
-        loglen = len(logs)
-        if loglen > 15:
-            loglen = 15
-        for log in logs[-15:-1]:
-            print(log)
-        print ("\nALT + V LOGS:")
-        for log in Log.altvLogs:
-            print(log)
-        print("msg = " + Glob.altvmsg)
-        print ("\n")
 
 class RivenAnalyser:
     def __init__(self, db: RivenDatabase, analyser:Analyser):
@@ -594,7 +549,10 @@ class AuctionWorker(QThread):
         prices = data[1]
         if len(prices) > 100:
             prices = prices[-100:-1]
-        avg_price = sum(prices) / len(prices)
+        if len(prices) == 0:
+            avg_price = 9999999
+        else:
+            avg_price = sum(prices) / len(prices)
         return avg_price
 
     def is_groll_high_stasts(self, auction, avg_price):
@@ -636,6 +594,12 @@ class AuctionWorker(QThread):
             return False
     
     def write_groll_prices_to_db(self, auctions):
+        if len(auctions) == 0:
+            return
+        #self.total_len += len(auctions)
+        #self.total_stats += 1
+        #print(len(auctions))
+        #print (f"total len: {self.total_len}; amount of stats: {self.total_stats}")
         weapon:str = auctions[0]["item"]["weapon_url_name"]
         Log.log_write(f"starting writing to GROLL DB data for {weapon}; amount of auctions: {len(auctions)}")
         checked_negs = []
@@ -648,6 +612,7 @@ class AuctionWorker(QThread):
             last_seen = owner["last_seen"]
             o_name = owner["ingame_name"]
             item = auction.get("item")
+            #self.re_rolls.append(item.get("re_rolls", 0))
             price = auction["buyout_price"]
             rank = item.get("mod_rank", 0)
             val_den = (rank + 1) / 9.0
@@ -736,6 +701,14 @@ class AuctionWorker(QThread):
                 ids_to_pop_for_current_prod.append(riven_id)
         for c_id in ids_to_pop_for_current_prod:
             self.tracked_grolls[p_prod_key].pop(c_id)
+        #if self.groll_url_id >= self.groll_url_len or self.total_stats >= self.groll_url_len:
+            #print (f"\n\n-------------------------\ntotal len: {self.total_len}; amount of stats: {self.total_stats}")
+            #d = {"re_rolls_list_sorted": self.re_rolls.sort()}
+            #print(d)
+            #with open(test_path) as f:
+            #    json.dump(d, f)
+            #self.total_len = 0
+            #self.total_stats = 0
 
     def on_turned_on_off(self):
         if win.ui.radioButton.isChecked():
@@ -746,6 +719,9 @@ class AuctionWorker(QThread):
             self.sync_needed = False
 
     def run(self):
+        self.re_rolls = []
+        self.total_len = 0
+        self.total_stats = 0
         self.firstRun = True
         #weapons_list = list(good_weapons.keys())
         self.fast_weap_id = 0
@@ -1093,7 +1069,45 @@ class MainWindow(QMainWindow):
             }
         }
 
+        fake_auction2 = {
+            "id": f"test_{random.randint(1000,999999)}",
+            "buyout_price": random.randint(50, 1000),
+            "owner": {
+                "ingame_name": "TestSeller",
+                "status": "ingame"
+            },
+            "item": {
+                "type": "riven",
+                "weapon_url_name": "torid",
+                "name": "Test Riven",
+                "re_rolls": random.randint(0, 300),
+                "attributes": [
+                    {
+                        "positive": True,
+                        "url_name": "critical_chance",
+                        "value": 180
+                    },
+                    {
+                        "positive": True,
+                        "url_name": "critical_damage",
+                        "value": 120
+                    },
+                    {
+                        "positive": True,
+                        "url_name": "multishot",
+                        "value": 110
+                    },
+                    {
+                        "positive": False,
+                        "url_name": "zoom",
+                        "value": -80
+                    }
+                ]
+            }
+        }
+
         self.on_alert(fake_auction, "manual request")
+        self.on_alert(fake_auction2, "manual request")
 
     def run_bump(self):
         self._start_bumper("bump")
@@ -1537,7 +1551,7 @@ if __name__ == "__main__":
     win.ui.volumeSlider.valueChanged.connect(win.on_volume_changed)
     win.ui.ensureAccountDataBtn.pressed.connect(win.run_bumper_test)
     win.ui.SaveMarketAccountData.pressed.connect(win.on_save_account_data)
-    log_printer.new_log.connect(win.ui.logsText.setText)
+    Log.log_printer.new_log.connect(win.ui.logsText.setText)
 
     #claude
     win.ui.verticalLayout_6.replaceWidget(win.ui.listWidget, win.qml_widget)
@@ -1561,12 +1575,12 @@ if __name__ == "__main__":
             central.layout().addWidget(win.bumper_group)
 
     win.show()
-    res = win.analyser.strepsils()
-    result, model = win.analyser.analyser.smooth_prices(res["torid"])
-    for key1, val1 in result.items():
-        for key2, val2 in result[key1].items():
-            result[key1][key2] = [result[key1][key2], res["torid"][key1][key2]]
-    pretty_json2 = json.dumps(result, indent=4)
+    #res = win.analyser.strepsils()
+    #result, model = win.analyser.analyser.smooth_prices(res["torid"])
+    #for key1, val1 in result.items():
+    #    for key2, val2 in result[key1].items():
+    #        result[key1][key2] = [result[key1][key2], res["torid"][key1][key2]]
+    #pretty_json2 = json.dumps(result, indent=4)
     #print(pretty_json2)
     #print(model)
     if SVINKA_VSEGDA_VIDNA:

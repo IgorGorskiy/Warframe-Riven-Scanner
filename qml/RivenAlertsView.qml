@@ -31,7 +31,7 @@ Rectangle {
     VideoOutput {
         id: videoOut
         anchors.fill: parent
-        fillMode: VideoOutput.PreserveAspectCrop
+        fillMode:     VideoOutput.PreserveAspectCrop
         z:            1
 
         // Плавно появляется при старте и исчезает при остановке,
@@ -48,9 +48,9 @@ Rectangle {
         videoOutput: videoOut
         loops:       MediaPlayer.Once
         audioOutput: AudioOutput {
-                    id: audioOut
-                    volume: 0.2  // Initial volume (0.0 = mute, 1.0 = full volume)
-                }
+                            id: audioOut
+                            volume: 0.2  // Initial volume (0.0 = mute, 1.0 = full volume)
+                        }
     }
 
     // ── Слой 2: список алертов поверх всего ──────────────────────
@@ -86,9 +86,9 @@ Rectangle {
     }
 
     // Adjust volume at runtime (e.g., from a slider, button, or function)
-    function changeVolume(newVolume) {
-        audioOut.volume = newVolume; // Expects a value between 0.0 and 1.0
-    }
+        function changeVolume(newVolume) {
+            audioOut.volume = newVolume; // Expects a value between 0.0 and 1.0
+        }
 
     // ── Триггер видео при новом алерте ────────────────────────────
     Connections {
