@@ -704,13 +704,17 @@ class SuperDatabase:
         except Exception as e:
             print ("get_latest_search_timestamp failed", e)
             return None
+        
+    def add_search_timestamp(self, timestamp):
 
-    def process_rivens_from_requester(self, auctions, search_hash):
+
+    def process_rivens_from_requester(self, auctions, search_hash, timestamp):
         ids = self.get_previous_rivens_ids(search_hash)
         prev_timestamp = self.get_latest_search_timestamp(search_hash)
+        self.add_search_timestamp(timestamp)
         # cначала эубрабатываем все пришедшие аукционы, а уже затем смотрим, какие ауки пропали
         for auction in auctions:
-            r_id = self.process_riven(auction, prev_timestamp)
+            r_id = self.insert_riven(auction, timestamp)
 
     def iso_to_timestamp(self, iso_str):
         dt = datetime.fromisoformat(iso_str)
@@ -720,7 +724,7 @@ class SuperDatabase:
     def get_current_statuses(self, riven_id):
         self.cursor.execute("""
             SELECT status_id, timestamp
-            FROM prev_scanned_rivens
+            FROM status_changes
             WHERE riven_id=?
             ORDER BY timestamp ASC
         """, (riven_id,))
@@ -740,7 +744,7 @@ class SuperDatabase:
                 visibility_status = self.id_to_status[status_id]
         return online_status, visibility_status
     
-    def update_current_riven_status(self, riven_id, status):
+    def update_current_riven_status(self, riven_id, status, timestamp):
         owner_statuses = [self.Statuses.ingame, self.Statuses.offline, self.Statuses.online]
         riven_statuses = [self.Statuses.hidden, self.Statuses.visible]
         if (not status in owner_statuses) and (not status in riven_statuses):
@@ -750,13 +754,19 @@ class SuperDatabase:
         online_status, visibility_status = self.get_current_statuses(riven_id)
         if status == online_status or status == visibility_status:
             return
-        
-    def insert_riven(self, auction):
+        #если статус поменялся - записываем
+        self.cursor.execute(f"""
+            INSERT INTO status_changes (riven_id, status_id, timestamp) VALUES (?, ?, ?)
+        """, (riven_id, self.status_to_id[status], timestamp))
+        self.conn.commit()
+
+    def insert_riven(self, auction, timestamp):
         riven_text_id = auction["id"]
         item = auction["item"]
         weapon = item["weapon"]
         owner_item = auction["owner"]
         owner = owner_item["ingame_name"]
+        owner_status = owner_item["status"]
         price = auction["buyout_price"]
         mod_rank = int(item["mod_rank"])
         if price is None:
@@ -789,37 +799,10 @@ class SuperDatabase:
             already_existed = True
             riven_id = row[0]
         # вставили ривен в БД, чиназес. Осталось проверить на изменения ривен, если он уже был в БД.
-        # но начнём с обработки случая, когда ривен новый.
-        if not already_existed:
-            # нужно добавить заметки о появлении онлайн и о видимости
-            self.update_current_riven_status(riven_id, self.Statuses.visible)
+        # Если ривен поменялся - удалить записи о нём из ВСЕХ таблиц, начать отслеживать его заново.
+        if already_existed:
+            if self.riven_changed(att_ids, att_values, auction, riven_id):
 
-
-    def process_riven(self, auction, latest_search_timestamp):
-        #эта функция может стать неиспользуемой из-за insert_riven
-        try:
-            item = auction["item"]
-            weapon = item["weapon"]
-            owner_item = auction["owner"]
-            owner = owner_item["ingame_name"]
-            weapon_id = self.get_id_from_field(weapon, "weapons")
-            owner_id = self.get_id_from_field(owner, "owners")
-            att_names, att_values = self.form_attributes_lists(item)
-            att_ids = self.get_attributes_ids(att_names)
-            # все данные для вставки в таблицу rivens есть.
-            # теперь нужно: 1) сравнить дату обновления на маркете с датой последней проверки. 
-            # 2) Если дата последней проверки позже - не добавляем ривен в БД, отслеживаем изменение статуса.
-            #    Важно обработать случай, когда дата последней проверки позже, но ривена нет в БД (мог быть невидимым)
-            #    Иначе - добавляем/заменяем данные о ривене, стираем всю инфу из таблиц отслеживания статусов (если заменяем ривен)
-            # Про отслеживание ривена:
-            # Если ривен новый - добавляем заметку о появлении ривена, о появлении онлайн
-            # Если ривен уже есть - проверяем последние статусы онлайна и существования, делаем заметку при несовпадении с текущими статусами
-            # Данный метод не отслеживает исчезновение ривена - это должен делать метод на ступень выше
-
-            # 0) Делаем поп-ытку добавить ривен в БД.
-
-            # 1) дата обновления ривена
-            updated = self.iso_to_timestamp(auction["updated"])
-
-        except Exception as e:
-            print ("super db init failed")
+        # отслеживаем статусы ривена.
+        self.update_current_riven_status(riven_id, self.Statuses.visible, timestamp)
+        self.update_current_riven_status(riven_id, owner_status, timestamp)
