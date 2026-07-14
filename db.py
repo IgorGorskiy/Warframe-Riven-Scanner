@@ -3,9 +3,17 @@ import sqlite3
 import json
 import os
 from typing import List, Tuple
+import copy
 
 from datetime import datetime, time, date, timezone, timedelta
 import time
+
+def are_values_close(arg1, arg2, max_difference_percentage):
+    abs_dif = abs(arg1 - arg2)
+    relation = abs_dif / arg1
+    if relation < (max_difference_percentage/100):
+        return True
+    return False
 
 class RivenDatabase:
     def __init__(self, path=None):
@@ -665,8 +673,7 @@ class SuperDatabase:
             ids.append(att_id)
         return ids
     
-    def get_latest_search_timestamp(self, search_hash):
-        hash_id = self.get_id_from_field(search_hash, "scan_params", "hash")
+    def get_latest_search_timestamp(self, hash_id):
         try:
             # Получаем таймстампы
             self.cursor.execute("""
@@ -683,10 +690,9 @@ class SuperDatabase:
             print ("get_latest_search_timestamp failed", e)
             return None
         
-    def get_previous_rivens_ids(self, search_hash):
+    def get_previous_rivens_ids(self, hash_id):
         """Возвращает sql-id ривенов из предыдущего запроса (для отслеживания исчезнувших)
         """
-        hash_id = self.get_id_from_field(search_hash, "scan_params", "hash")
         try:
             # Получаем sql-id ривенов
             self.cursor.execute("""
@@ -698,23 +704,51 @@ class SuperDatabase:
             if len(rows) < 1 or rows is None:
                 return []
             rivens_ids = []
-            for r_id in rows:
+            for r_id, in rows:
                 rivens_ids.append(r_id)
             return rivens_ids
         except Exception as e:
             print ("get_latest_search_timestamp failed", e)
             return None
         
-    def add_search_timestamp(self, timestamp):
+    def add_search_timestamp(self, timestamp, hash_id):
+        self.cursor.execute(f"""
+            INSERT INTO scan_timestamps (hash_id, time) VALUES (?, ?)
+        """, (hash_id, timestamp))
+        self.conn.commit()
 
+    def delete_riven_from_prev_scanned_rivens(self, riven_id):
+        self.cursor.execute("""
+            DELETE FROM prev_scanned_rivens
+            WHERE riven_id=?
+        """, (riven_id,))
+        self.conn.commit()
+
+    def add_riven_to_prev_scanned_rivens(self, hash_id, new_id):
+        self.cursor.execute(f"""
+            INSERT INTO prev_scanned_rivens (hash_id, riven_id) VALUES (?, ?)
+        """, (hash_id, new_id))
+        self.conn.commit()
 
     def process_rivens_from_requester(self, auctions, search_hash, timestamp):
-        ids = self.get_previous_rivens_ids(search_hash)
-        prev_timestamp = self.get_latest_search_timestamp(search_hash)
-        self.add_search_timestamp(timestamp)
+        hash_id = self.get_id_from_field(search_hash, "scan_params", "hash")
+        old_ids = self.get_previous_rivens_ids(hash_id)
+        prev_timestamp = self.get_latest_search_timestamp(hash_id)
+        self.add_search_timestamp(timestamp, hash_id)
         # cначала эубрабатываем все пришедшие аукционы, а уже затем смотрим, какие ауки пропали
+        new_ids = []
         for auction in auctions:
-            r_id = self.insert_riven(auction, timestamp)
+            r_id = self.insert_or_update_riven(auction, timestamp)
+            new_ids.append(r_id)
+        # находим пропавшие ривены. обновляем статус, удаляем id из prev_scanned_rivens
+        for old_id in old_ids:
+            if not old_id in new_ids:
+                self.update_current_riven_status(old_id, self.Statuses.hidden, timestamp)
+                self.delete_riven_from_prev_scanned_rivens(old_id)
+        # находим новые ривены. Статус у них уже обновлён в insert_or_update_riven, только добавляем в prev_scanned_rivens
+        for new_id in new_ids:
+            if not new_id in old_ids:
+                self.add_riven_to_prev_scanned_rivens(hash_id, new_id)
 
     def iso_to_timestamp(self, iso_str):
         dt = datetime.fromisoformat(iso_str)
@@ -760,7 +794,20 @@ class SuperDatabase:
         """, (riven_id, self.status_to_id[status], timestamp))
         self.conn.commit()
 
-    def insert_riven(self, auction, timestamp):
+    def on_riven_changed(self, riven_id, price_new):
+        self.cursor.execute(f"""
+            UPDATE rivens
+            SET price = ?
+            WHERE id = ?
+        """, (price_new, riven_id))
+        # теперь стираем все предыдущие статусы
+        self.cursor.execute("""
+            DELETE FROM status_changes
+            WHERE riven_id=?
+        """, (riven_id,))
+        self.conn.commit()
+
+    def insert_or_update_riven(self, auction, timestamp):
         riven_text_id = auction["id"]
         item = auction["item"]
         weapon = item["weapon"]
@@ -784,9 +831,8 @@ class SuperDatabase:
             SELECT *
             FROM rivens
             WHERE riven_text_id=?
-            ORDER BY timestamp
         """, (riven_text_id))
-        row = self.cursor.fetchone()
+        row:tuple = self.cursor.fetchone()
         riven_id = -1
         if row is None:
             # ривена нет - создаём
@@ -801,8 +847,9 @@ class SuperDatabase:
         # вставили ривен в БД, чиназес. Осталось проверить на изменения ривен, если он уже был в БД.
         # Если ривен поменялся - удалить записи о нём из ВСЕХ таблиц, начать отслеживать его заново.
         if already_existed:
-            if self.riven_changed(att_ids, att_values, auction, riven_id):
-
+            if price != row[3]:
+                self.on_riven_changed(riven_id, price)
         # отслеживаем статусы ривена.
         self.update_current_riven_status(riven_id, self.Statuses.visible, timestamp)
         self.update_current_riven_status(riven_id, owner_status, timestamp)
+        return riven_id

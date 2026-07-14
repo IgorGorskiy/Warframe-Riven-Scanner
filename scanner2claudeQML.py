@@ -38,7 +38,8 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget,
     QLabel, QPushButton, QListWidget, QListWidgetItem,
     QVBoxLayout, QHBoxLayout, QLineEdit, QGroupBox,
-    QLCDNumber, QSpacerItem, QSizePolicy, QGraphicsView, QTextEdit
+    QLCDNumber, QSpacerItem, QSizePolicy, QGraphicsView, QTextEdit,
+    QMessageBox
 )
 
 from PySide6.QtCore import Qt, QSize, QDateTime, QStringConverter
@@ -736,7 +737,7 @@ class AuctionWorker(QThread):
         self.sync_needed = True
         self.turned_off = False
         last_api_updae = time.time()
-        while self.running:
+        while self.running and (not self.isInterruptionRequested()):
             try:
                 Log.log_write(f"starting iteration with following parameters: groll_url_len = {self.groll_url_len}; good_weapons_len ="
                               f" {self.good_weapons_len}; fast_weapons_length = {len(Glob.fast_weapons_list)}; fast_weap_id = "
@@ -1192,13 +1193,14 @@ class MainWindow(QMainWindow):
                 self.worker.stop()
 
                 if self.worker.isRunning():
-                    self.worker.wait(5000)
+                    self.worker.requestInterruption()
+                    self.worker.wait()
 
             if hasattr(self, "bumper_worker") and self.bumper_worker:
                 self.bumper_worker.stop()
 
                 if self.bumper_worker.isRunning():
-                    self.bumper_worker.wait(5000)
+                    self.bumper_worker.wait()
 
             if hasattr(self, "player"):
                 self.player.stop()
