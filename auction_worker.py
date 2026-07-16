@@ -15,7 +15,7 @@ import traceback
 from collections import deque
 from uis3 import Ui_MainWindow
 from market_riven_api import MarketAPI, MarketBumperState, BumperWorker
-from db import RivenDatabase, PodRollDB
+from db import RivenDatabase, PodRollDB, SuperDatabase
 from rivenwidgets import RivenAlertWidget
 from prices_analysis import Analyser
 from datetime import datetime, timezone, timedelta
@@ -29,26 +29,9 @@ from enums import modes, reasons_to_display
 import pandas as pd
 import numpy as np
 
-from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget,
-    QLabel, QPushButton, QListWidget, QListWidgetItem,
-    QVBoxLayout, QHBoxLayout, QLineEdit, QGroupBox,
-    QLCDNumber, QSpacerItem, QSizePolicy, QGraphicsView, QTextEdit
-)
-
-from PySide6.QtCore import Qt, QSize, QDateTime, QStringConverter
 from PySide6.QtCore import Signal, QThread, QObject
-from PySide6.QtMultimedia import QMediaPlayer
 
-# перевод rivenalertwidget на qml   
-from PySide6.QtGui import QGuiApplication
-from PySide6.QtQml import QQmlApplicationEngine
-from PySide6.QtQuickWidgets import QQuickWidget
-
-#говно с клода началось
-from PySide6.QtCore import QUrl
 from pathlib import Path
-from riven_qml_bridge import RivenListModel
 
 from rate_limiter import RateLimiter
 
@@ -79,13 +62,14 @@ class QueueManager():
         modes_queue = "mq"
         mode_repetative = "mr"
         search_params = "sp"
+        good_weapons = "gw"
 
     def __init__(self, settings_path, opt_req):
         super().__init__()
         self.settings_path = settings_path
-        self.temporal_queues = {self.queues.fast_weapons: deque(), self.queues.modes_queue: deque(),\
+        self.temporal_queues = {self.queues.good_weapons: deque(), self.queues.fast_weapons: deque(), self.queues.modes_queue: deque(),\
                                 self.queues.mode_repetative: "", self.queues.search_params: deque()}
-        self.const_queues = {self.queues.fast_weapons: [], self.queues.modes_queue: [],\
+        self.const_queues = {self.queues.good_weapons: {}, self.queues.fast_weapons: [], self.queues.modes_queue: [],\
                                 self.queues.mode_repetative: "", self.queues.search_params: []}
         self.load_schedule_from_settings_file()
         self.schedule_refresh()
@@ -113,6 +97,9 @@ class QueueManager():
         return elem
     
     def force_update(self, queue_type):
+        if queue_type == self.queues.mode_repetative:
+            print("ERROR: mode_repetative in force_update")
+            return
         self.temporal_queues[queue_type] = deque(self.const_queues[queue_type])
 
     def schedule_refresh(self):
@@ -120,7 +107,7 @@ class QueueManager():
         для расписания режимов и для повторяющегося режима (вызывать, когда обновились ривены на главной маркета)
         """
         self.force_update(self.queues.modes_queue)
-        self.force_update(self.queues.mode_repetative)
+        self.temporal_queues[self.queues.mode_repetative] = self.const_queues[self.queues.mode_repetative]
 
     def load_schedule_from_settings_file(self):
         with open(self.settings_path) as f:
@@ -161,6 +148,9 @@ class QueueManager():
         settings["fast_weapons_list"] = weapons
         with open(self.settings_path, "w") as f:
             json.dump(settings, f)
+
+    def set_good_weapons(self, weapons:dict):
+        self.set_const_queue(weapons, self.queues.good_weapons)
 
     def load_url_params_from_settings_file(self):
         with open(self.settings_path) as f:
@@ -215,7 +205,7 @@ class OptimalSchedule:
         if self.unsynchronised:
             return modes.main_page_auctions
         current_time = time.time()
-        if current_time < self.refresh_time:
+        if current_time > self.refresh_time:
             self.refresh_time += self.interval
             self.queue_manager.schedule_refresh()
             return modes.main_page_auctions
@@ -239,6 +229,43 @@ class AuctionWorker(QThread):
     newRivensCountUpdate = Signal(int)
     groll_urls_progress = Signal(int)
     pod_roll_progress = Signal(int)
+    message_to_ui = Signal(str, str)
+
+    def set_good_weapons(self, good_weapons):
+        self.good_weapons = good_weapons
+        self.queue_manager.set_good_weapons(good_weapons)
+
+    def set_fast_weapons(self, fast_weapons_list):
+        self.queue_manager.set_fast_weapons(fast_weapons_list)
+
+    def set_url_params(self, params):
+        self.queue_manager.set_url_params(params)
+
+    def set_cooldown(self, mode, cooldown_text):
+        mode_to_cooldown = {}
+        try:
+            with open(settings_path, "r") as f:
+                settings_cur = json.load(f)
+                text = cooldown_text
+                mode_to_cooldown = settings_cur["cooldowns"]
+                val = mode_to_cooldown[mode]
+                try:
+                    val = float(text)
+                except ValueError:
+                    print("НЕВЕРНЫЙ ВВОД ВРЕМЕНИ ОЖИДАНИЯ! ВВЕДИ ЧИСЛО!")
+                    self.message_to_ui.emit("lineEdit", "НЕВЕРНЫЙ ВВОД ВРЕМЕНИ! ВВЕДИ ЧИСЛО!")
+                mode_to_cooldown[mode] = val
+                Log.log_write(f"cooldown for {mode} changed to {val} s")
+                settings_cur["cooldowns"] = mode_to_cooldown
+            with open(settings_path, "w") as f:
+                json.dump(settings_cur, f)
+            f.close()
+        except Exception as e:
+            self.message_to_ui.emit("lineEdit", "НЕ УДАЛОСЬ СОХРАНИТЬ ВРЕМЯ ОЖИДАНИЯ")
+            print(e)
+            return
+        self.message_to_ui.emit("lineEdit", "УДАЛОСЬ СОХРАНИТЬ ВРЕМЯ ОЖИДАНИЯ")
+        self.mode_to_cooldown = mode_to_cooldown
 
     def load_data_from_settings_file(self, file_path:str):
         with open(file_path) as f:
@@ -248,6 +275,7 @@ class AuctionWorker(QThread):
                 good_weapons = {"magistar": 200, "verglas": 200, "torid": 100}
                 print("ERROR: cannot get good_weapons; using default good_weapons")
             self.good_weapons = good_weapons
+            self.queue_manager.set_const_queue(good_weapons, QueueManager.queues.good_weapons)
 
             fast_weapons_list = settings.get("fast_weapons_list", [])
             if len(fast_weapons_list) < 1:
@@ -256,13 +284,6 @@ class AuctionWorker(QThread):
             self.queue_manager.set_const_queue(fast_weapons_list, QueueManager.queues.fast_weapons)
 
             self.mode_to_cooldown = settings.get("cooldowns", {})
-
-    def load_data_runtime(self, good_weapons, fast_weapons_list):
-        """
-        Загрузка словаря с максимальными ценами и списка оружий для частой проверки. Нет проверки на валидность.
-        """
-        self.good_weapons = good_weapons
-        self.queue_manager.set_const_queue(fast_weapons_list, QueueManager.queues.fast_weapons)
 
     def check_riven_for_endo(self, auction):
         buyout = auction.get("buyout_price")
@@ -300,7 +321,9 @@ class AuctionWorker(QThread):
         # сначала проверяем, есть ли среди полученных аукционов интересные
         # проверяем абсолютно все ауки на случай изменений
         self.process_auctions(auctions, set())
-        # затем заносим информацию обо всех аукционах в БД (доделать!)
+        # затем заносим информацию обо всех аукционах в БД (доделать!) доделано)
+        search_hash = current_params.__hash__()
+        self.super_db.process_rivens_from_requester(auctions, search_hash, end_time)
 
     def process_auctions(self, auctions, seen_auctions:set):
         # в качестве аргумента seen_auctions будут поступать РАЗНЫЕ списки -> один аукцион может быть проверен дважды
@@ -322,6 +345,7 @@ class AuctionWorker(QThread):
         r = self.rate_limiter.get_response(BASE_WEAPONS_URL + weapon, self.mode_to_cooldown[modes.fast_check], HEADERS, 10)
         auctions = r.json()["payload"]["auctions"]
         self.process_auctions(auctions, self.processed_fast_auctions_ids)
+        self.update_simple_database(auctions)
 
     def process_main_page(self, responce):
         # отличаем первую порцию аукционов по количеству новых: если около 100 - значит, только началась работа
@@ -334,9 +358,54 @@ class AuctionWorker(QThread):
             # это не первый запрос, и есть новые ривены -> получили время обновления данных на маркете
             # можем начинать выполнение прописанного пользователем расписания
             # не опасаемся повторных вызовов - функция ничего не делает, если была вызвана до этого
+            self.newRivensCountUpdate.emit(newRivensCount)
             self.schedule_manager.start_main_loop()
 
-    def __init__(self, db: RivenDatabase, pod_roll_db:PodRollDB, cache_path:str):
+    def process_simple_price_history_request(self):
+        weapon = ""
+        i = 0
+        while True:
+            i += 1
+            if i > 1000:
+                print("ERROR: cannot get good weapon that is not in fast-check-list")
+                return
+            weapon = self.queue_manager.take_from_queue(self.queue_manager.queues.good_weapons)
+            if weapon in self.queue_manager.queues.fast_weapons:
+                continue
+            else:
+                break
+        if weapon == "":
+            print("ERROR: cannot get good weapon")
+            return
+        r = self.rate_limiter.get_response(BASE_WEAPONS_URL + weapon, self.mode_to_cooldown[modes.simple_price_history], HEADERS, 10)
+        auctions = r.json()["payload"]["auctions"]
+        self.process_auctions(auctions, self.processed_fast_auctions_ids)
+        self.update_simple_database(auctions)
+
+    def update_simple_database(self, auctions):
+        item = auctions[0].get("item")
+        weapon = item["weapon_url_name"]
+        i = 0
+        prices = []
+        Log.log_write(f"starting writing to DB data for {weapon}; amount of auctions: {len(auctions)}")
+        offline_count = 0
+        for auction in auctions:
+            owner = auction["owner"]
+            status = owner["status"]
+            if status == "offline":
+                offline_count = offline_count + 1
+            if status != "offline":
+                prices.append(auction["buyout_price"])
+                i = i + 1
+            if i >= 3:
+                break
+        Log.log_write(f"writing to DB data: {prices} || for time: {int(time.time())}")
+
+        while len(prices) < 3:
+            prices.append(-1)
+        self.pod_roll_db.insert_prices(weapon, prices[0], prices[1], prices[2], int(time.time()))
+
+    def __init__(self, db: RivenDatabase, pod_roll_db:PodRollDB, super_db:SuperDatabase, cache_path:str):
         super().__init__()
         self.market_limiter = RateLimiter(2)  # 2 запрос / сек
         r = self.market_limiter.get_response("https://api.warframe.market/v2/riven/weapons", 2, HEADERS2, 10)
@@ -345,6 +414,7 @@ class AuctionWorker(QThread):
         for w in weapons:
             self.weapon_rivens[w["slug"]] = w
         self.price_queue = deque()
+        self.super_db = super_db
         self.db = db
         self.pod_roll_db = pod_roll_db
         self.grolls_to_dismiss = self.db.get_dismiss_list()
@@ -353,19 +423,35 @@ class AuctionWorker(QThread):
         self.requester.load_cache_from_file(cache_path)
         self.requester.queue_exhausted.connect(self.on_optimal_requester_queue_exhausted)
         self.requester.auctions_ready.connect(self.process_optimal_requester_auctions)
-        self.queue_manager = QueueManager(settings_path)
+        self.queue_manager = QueueManager(settings_path, self.requester)
         self.schedule_manager = OptimalSchedule(self.queue_manager)
         self.good_weapons = {}
         self.mode_to_cooldown = {}
+        self.turned_off = False
+        self.grolls_to_dismiss = list()
 
         self.processed_main_page_auctions_ids = set()
         self.processed_fast_auctions_ids = set()
         self.processed_auctions_from_requester = set()
 
         self.load_data_from_settings_file(settings_path)
+        self.running = True
+
+        def on_ready(params, auctions, t_start, t_end):
+            print(
+                f"\n=== ГОТОВО: {params} — {len(auctions)} аукционов "
+                f"за {t_end - t_start:.1f} с ==="
+            )
+            # После каждого успешного результата сохраняем кэш
+            self.requester.save_cache_to_file(cache_path)
+        self.requester.auctions_ready.connect(on_ready)
 
     def run(self):
-        while self.running:
+        while self.running and (not self.isInterruptionRequested()):
+            start_time = time.perf_counter()
+            if self.turned_off:
+                time.sleep(1)
+                continue
             try:
                 mode = self.schedule_manager.get_stage()
                 if mode == modes.optimal_search:
@@ -377,10 +463,15 @@ class AuctionWorker(QThread):
                     self.process_main_page(r)
                 elif mode == modes.fast_check:
                     self.do_fast_check()
+                elif mode == modes.simple_price_history:
+                    self.process_simple_price_history_request()
+                    
             except Exception as e:
                 print("Worker error:", e)
+                print("traceback:" + traceback.format_exc())
+            end_time = time.perf_counter()
+            execution_time = end_time - start_time
+            print(f"Итерация выполнилась за {execution_time:.4f} секунд, mode = {mode}")
 
     def stop(self):
         self.running = False
-
-aw = AuctionWorker(1, 1)

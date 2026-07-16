@@ -44,6 +44,8 @@ class Log(QThread):
         logs_to_show.append(f"{now}: {text}")
         logs.append(f"{now}: {text}")
 
+        cur = f"{now}: {text}\n"
+
         full_text = "\n".join(logs_to_show)
         Log.log_printer.emit_text(full_text)
     

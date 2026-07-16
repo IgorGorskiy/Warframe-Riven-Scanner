@@ -526,7 +526,7 @@ class OptimalRequester(QObject):
         for elem in re_rolls_list:
             elem_count += 1
             leftover += 1
-            if elem_count > 460 - tolerance:
+            if elem_count > 410 - tolerance:
                 re_rolls_points.append(prev_elem)
                 elem_count = leftover
             if elem > current_elem:
@@ -628,7 +628,7 @@ class OptimalRequester(QObject):
         auctions: list[dict] = payload["auctions"]
 
         # --- Проверка переполнения ------------------------------------------
-        if len(auctions) >= self.MAX_AUCTIONS - 15:
+        if len(auctions) >= self.MAX_AUCTIONS - 30:
             if self._mode == "from_cache":
                 print(
                     f"[OptimalRequester] ОШИБКА: переполнение в режиме кэша "

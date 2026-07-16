@@ -23,7 +23,7 @@ import traceback
 from collections import deque
 from uis3 import Ui_MainWindow
 from market_riven_api import MarketAPI, MarketBumperState, BumperWorker
-from db import RivenDatabase, PodRollDB
+from db import RivenDatabase, PodRollDB, SuperDatabase
 from rivenwidgets import RivenAlertWidget
 from prices_analysis import Analyser
 from datetime import datetime, timezone, timedelta
@@ -31,6 +31,7 @@ from typing import List, Tuple
 from myplot import PricePlot
 from password_storage import CredentialsStorage
 from log_printer import LogPrinter, Log
+from auction_worker import AuctionWorker
 import pandas as pd
 import numpy as np
 
@@ -47,7 +48,7 @@ from PySide6.QtCore import Signal, QThread, QObject
 from PySide6.QtMultimedia import QMediaPlayer
 
 # перевод rivenalertwidget на qml   
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QGuiApplication, QTextCursor
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickWidgets import QQuickWidget
 
@@ -101,12 +102,7 @@ f.close()
 
 SVINKA_VSEGDA_VIDNA = False
 
-MODE_TO_COOLDOWN = {
-    "WEAPON_FOR_DB_SEARCH": 7,
-    "GROLL": 7,
-    "FAST_SEARCH": 7,
-    "BASE_API": 3
-}
+MODE_TO_COOLDOWN = {"main_page_auctions": 3.0, "fast_check": 7.0, "optimal_search": 7.0, "simple_history": 3.0}
 
 BASE_WEAPONS_URL = "https://api.warframe.market/v1/auctions/search?type=riven&sort_by=price_asc&weapon_url_name="
 API_AUCTIONS = "https://api.warframe.market/v1/auctions"
@@ -116,6 +112,7 @@ API_SEARCH3 = "&sort_by=price_asc"
 
 HEADERS = {"accept": "application/json", "platform": "pc"}
 DB_PATH = "rivens.db"
+CACHE_FILE = "C:/amyfiles/projects/rivenendo/riven_cache.json"
 
 GOOD_STATS = [
     "critical_chance",
@@ -482,7 +479,7 @@ class RivenAnalyser:
         result33 = self.analyser.calculate_q(prices, q3)
         return [result31, result32, result33]
 
-class AuctionWorker(QThread):
+class AuctionWorker_old(QThread):
     price_checked = Signal(str, list)  # auction_id, prices
     alert_found = Signal(dict, str)
     newRivensCountUpdate = Signal(int)
@@ -711,14 +708,6 @@ class AuctionWorker(QThread):
             #self.total_len = 0
             #self.total_stats = 0
 
-    def on_turned_on_off(self):
-        if win.ui.radioButton.isChecked():
-            self.turned_off = False
-            self.sync_needed = True
-        else:
-            self.turned_off = True
-            self.sync_needed = False
-
     def run(self):
         self.re_rolls = []
         self.total_len = 0
@@ -932,17 +921,18 @@ class MainWindow(QMainWindow):
         self.resize(1000, 600)
         self.startupTime = time.time()
         self.scanTimes = []
+        self.super_db = SuperDatabase()
         self.db = RivenDatabase()
         self.market_account = CredentialsStorage()
         self.pod_roll_db = PodRollDB(Glob.good_weapons)
         #self.grollDB = MongoDBManager()
         self.podRollText = QTextEdit()
-        self.worker = AuctionWorker(self.db, self.pod_roll_db)
-        self.worker.price_checked.connect(self.on_price_checked)
+        self.worker = AuctionWorker(self.db, self.pod_roll_db, self.super_db, CACHE_FILE)
         self.worker.alert_found.connect(self.on_alert)
         self.worker.newRivensCountUpdate.connect(self.on_new_rivens_updated)
         self.worker.pod_roll_progress.connect(self.on_pod_roll_progress)
         self.worker.groll_urls_progress.connect(self.on_groll_progress)
+        self.worker.message_to_ui.connect(self.on_message_to_display)
 
         self.analyser = RivenAnalyser(self.db, Analyser())
         #grollIDs = self.grollDB.get_all_ids()
@@ -1163,8 +1153,6 @@ class MainWindow(QMainWindow):
             return
         if reason != "manual request" and reason != "sold riven":
             self.seen_ids.add(auc_id)
-        if reason == "good stats":
-            self.worker.enqueue_price_check(auction)
         if reason == "pod roll":
             Glob.altvmsg = f"/w {owner_name} Hi! I want to buy {weapon} {riven_name} for {price}p"
             Log.log_write(f"new alt+v msg: {Glob.altvmsg}")
@@ -1209,11 +1197,6 @@ class MainWindow(QMainWindow):
             print("closeEvent error:", ex)
 
         e.accept()
-
-    def on_price_checked(self, auc_id, prices):
-        widget = RivenAlertWidget.alert_widgets.get(auc_id)
-        if widget:
-            widget.set_market_prices(prices)
 
     def on_new_rivens_updated(self, count):
         updates = win.ui.updatesLCD.value()
@@ -1279,125 +1262,77 @@ class MainWindow(QMainWindow):
         win.ui.stat4.setCurrentText(neg)
         self.draw_groll_plot()
         
-
     def save_pod_roll_weapons_to_json(self):
+        weapons = {}
         try:
+            text = win.ui.podRollText.toPlainText().split("\n")
+            weapons = {}
+            for line in text:
+                if line != "":
+                    line_s = line.split(" ")
+                    weapons[line_s[0]] = int(line_s[1])
+            self.worker.set_good_weapons(weapons)
+            for weapon in weapons:
+                self.worker.pod_roll_db.create_weapon_table(weapon)
+            settings_cur = {}
             with open(settings_path, "r") as f:
                 settings_cur = json.load(f)
-                text = win.ui.podRollText.toPlainText().split("\n")
-                weapons = {}
-                for line in text:
-                    if line != "":
-                        line_s = line.split(" ")
-                        weapons[line_s[0]] = int(line_s[1])
                 settings_cur["good_weapons"] = weapons
-                Glob.good_weapons = weapons
-                for weapon in weapons:
-                    self.worker.pod_roll_db.create_weapon_table(weapon)
-                self.worker.good_weapons_id = 0
-                self.worker.good_weapons_list = list(Glob.good_weapons)
-                self.worker.good_weapons_len = len(self.worker.good_weapons_list)
-                self.worker.pod_roll_progress.emit(0)
-            f.close()
             with open(settings_path, "w") as f:
                 json.dump(settings_cur, f)
-            f.close()
         except Exception as e:
             win.ui.lineEdit.setText("НЕ УДАЛОСЬ СОХРАНИТЬ ОРУЖИЯ ПОД РОЛЛ")
             print(e)
             return
         win.ui.lineEdit.setText("УДАЛОСЬ СОХРАНИТЬ ОРУЖИЯ ПОД РОЛЛ")
-        Glob.settings = settings_cur
         win.ui.weaponComboBox.clear()
-        weapons_to_box = Glob.settings["good_weapons"]
+        weapons_to_box = weapons
         for weapon in weapons_to_box:
             win.ui.weaponComboBox.addItem(weapon)
 
-
     def save_db_weapons_to_json(self):
         try:
-            with open(settings_path, "r") as f:
-                settings_cur = json.load(f)
-                text = win.ui.DBweaponsText.toPlainText().split("\n")
-                weapons = []
-                for line in text:
-                    if line != "":
-                        weapons.append(line)
-                for weapon in weapons:
-                    if not weapon in Glob.good_weapons:
-                        print(f"ERROR: Нет оружия {weapon} в списке оружий под ролл.")
-                        Log.log_print(f"ERROR: Нет оружия {weapon} в списке оружий под ролл.")
-                        win.ui.lineEdit.setText(f"ОШИБКА: Нет оружия {weapon} в списке оружий под ролл.")
-                        play_sound()
-                        play_sound()
-                        return
-                settings_cur["fast_weapons_list"] = weapons
-                Glob.fast_weapons_list = weapons
-                self.worker.fast_weap_id = 0
-            f.close()
-            with open(settings_path, "w") as f:
-                json.dump(settings_cur, f)
-            f.close()
+            text = win.ui.DBweaponsText.toPlainText().split("\n")
+            weapons = []
+            for line in text:
+                if line != "":
+                    weapons.append(line)
+            for weapon in weapons:
+                if not weapon in self.worker.queue_manager.const_queues[self.worker.queue_manager.queues.fast_weapons]:
+                    print(f"ERROR: Нет оружия {weapon} в списке оружий под ролл.")
+                    Log.log_print(f"ERROR: Нет оружия {weapon} в списке оружий под ролл.")
+                    win.ui.lineEdit.setText(f"ОШИБКА: Нет оружия {weapon} в списке оружий под ролл.")
+                    play_sound()
+                    play_sound()
+                    return
+            self.worker.set_fast_weapons(weapons)
         except Exception as e:
             win.ui.lineEdit.setText("НЕ УДАЛОСЬ СОХРАНИТЬ ОРУЖИЯ ДЛЯ УСКОРЕННОЙ ПРОВЕРКИ")
             print(e)
             return
         win.ui.lineEdit.setText("УДАЛОСЬ СОХРАНИТЬ ОРУЖИЯ ДЛЯ УСКОРЕННОЙ ПРОВЕРКИ")
-        Glob.settings = settings_cur
 
     def save_cooldown(self):
-        try:
-            with open(settings_path, "r") as f:
-                settings_cur = json.load(f)
-                text = win.ui.cooldownInput.text()
-                mode = win.ui.cooldownComboBox.currentText()
-                val = Glob.mode_to_cooldown[mode]
-                try:
-                    val = float(text)
-                except ValueError:
-                    win.ui.lineEdit.setText("НЕВЕРНЫЙ ВВОД ВРЕМЕНИ! ВВЕДИ ЧИСЛО!")
-                    print("НЕВЕРНЫЙ ВВОД ВРЕМЕНИ ОЖИДАНИЯ! ВВЕДИ ЧИСЛО!")
-                    win.ui.cooldownInput.settext(Glob.mode_to_cooldown[mode])
-                Glob.mode_to_cooldown[mode] = val
-                Log.log_write(f"cooldown for {mode} changed to {val} s")
-                settings_cur["cooldowns"] = Glob.mode_to_cooldown
-            f.close()
-            with open(settings_path, "w") as f:
-                json.dump(settings_cur, f)
-            f.close()
-        except Exception as e:
-            win.ui.lineEdit.setText("НЕ УДАЛОСЬ СОХРАНИТЬ ВРЕМЯ ОЖИДАНИЯ")
-            print(e)
-            return
-        win.ui.lineEdit.setText("УДАЛОСЬ СОХРАНИТЬ ВРЕМЯ ОЖИДАНИЯ")
-        Glob.settings = settings_cur
+        self.worker.set_cooldown(win.ui.cooldownComboBox.currentText(), win.ui.cooldownInput.text())
 
     def save_schedule_to_json(self):
         try:
-            with open(settings_path, "r") as f:
-                settings_cur = json.load(f)
-                text = win.ui.scheduleText.toPlainText().split("\n")
-                stages = []
-                for line in text:
-                    if line != "":
-                        if line in MODE_TO_COOLDOWN:
-                            stages.append(line)
-                        else:
-                            print(f"Ошибка: неверный режим: {line}")
-                settings_cur["schedule"] = stages
-                Glob.schedule = stages
-            f.close()
-            with open(settings_path, "w") as f:
-                json.dump(settings_cur, f)
-            f.close()
+            text = win.ui.scheduleText.toPlainText().split("\n")
+            stages = []
+            for line in text:
+                if line != "":
+                    if line in MODE_TO_COOLDOWN:
+                        stages.append(line)
+                    else:
+                        print(f"Ошибка: неверный режим: {line}")
+            self.worker.queue_manager.set_schedule(stages)
         except Exception as e:
             win.ui.lineEdit.setText("НЕ УДАЛОСЬ СОХРАНИТЬ РАСПИСАНИЕ")
             print(e)
             return
-        Glob.settings = settings_cur
         secs = 3
-        for mode in Glob.schedule:
-            secs += Glob.mode_to_cooldown[mode]
+        for mode in self.worker.queue_manager.const_queues[self.worker.queue_manager.queues.modes_queue]:
+            secs += self.worker.mode_to_cooldown[mode]
         win.ui.lineEdit.setText(f"УДАЛОСЬ СОХРАНИТЬ РАСПИСАНИЕ; РАСЧЁТНОЕ ВРЕМЯ НА ВЫПОЛНЕНИЕ: {secs} СЕУНД")
 
     def on_plotCOunt_edited(self):
@@ -1416,7 +1351,7 @@ class MainWindow(QMainWindow):
         except ValueError:
             win.ui.lineEdit.setText("НЕВЕРНЫЙ ВВОД ВРЕМЕНИ! ВВЕДИ ЧИСЛО!")
             print("НЕВЕРНЫЙ ВВОД ВРЕМЕНИ ОЖИДАНИЯ! ВВЕДИ ЧИСЛО!")
-            win.ui.cooldownInput.settext(Glob.mode_to_cooldown[win.ui.cooldownComboBox.currentText()])
+            win.ui.cooldownInput.setText(self.worker.mode_to_cooldown[win.ui.cooldownComboBox.currentText()])
 
     def init_groll_ui(self):
         for weapon in groll_raw_stats.keys():
@@ -1439,6 +1374,7 @@ class MainWindow(QMainWindow):
             win.ui.stat4.addItem(neg)
 
     def show_sold_grolls(self):
+        return
         weapon = win.ui.grollWeaponComboBoX.currentText()
         stats = [win.ui.stat1.currentText(), win.ui.stat2.currentText(), win.ui.stat3.currentText()]
         stats.sort()
@@ -1461,6 +1397,7 @@ class MainWindow(QMainWindow):
             self.worker.alert_found.emit(riven, "sold riven")
 
     def on_pod_roll_progress(self, stage):
+        return
         upper_limit = len(self.worker.good_weapons_list)
         win.ui.podRollProgress.setMaximum(upper_limit)
         win.ui.podRollProgress.setValue(stage)
@@ -1469,7 +1406,7 @@ class MainWindow(QMainWindow):
         win.ui.grollProgress.setValue(stage)
 
     def on_mode_combobox_changed(self):
-        win.ui.cooldownInput.setText(str(Glob.mode_to_cooldown[win.ui.cooldownComboBox.currentText()]))
+        win.ui.cooldownInput.setText(str(self.worker.mode_to_cooldown[win.ui.cooldownComboBox.currentText()]))
 
     def on_volume_changed(self):
         value = float(win.ui.volumeSlider.value()) / 100.0
@@ -1487,6 +1424,36 @@ class MainWindow(QMainWindow):
         win.ui.PasswordInput.setText("")
         win.ui.NicknameInput.setText("")
 
+    def on_turned_on_off(self):
+        if win.ui.radioButton.isChecked():
+            self.worker.turned_off = False
+        else:
+            self.worker.turned_off = True
+
+    def on_message_to_display(self, destination, msg):
+        if destination == "lineEdit":
+            win.ui.lineEdit.setText(msg)
+            if msg == "НЕВЕРНЫЙ ВВОД ВРЕМЕНИ! ВВЕДИ ЧИСЛО!":
+                win.ui.cooldownInput.setText(self.worker.mode_to_cooldown[mode])
+
+    def on_new_log(self, text):
+        win.ui.logsText.setText(text)
+        return
+        cursor = win.ui.logsText.textCursor()  # сохраняем текущее выделение
+
+        # Создаем отдельный курсор для вставки
+        insert_cursor = QTextCursor(win.ui.logsText.document())
+        insert_cursor.movePosition(QTextCursor.End)
+        insert_cursor.insertText(text)
+
+        # Прокрутить вниз
+        scrollbar = win.ui.logsText.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+
+        # Восстанавливаем курсор пользователя
+        win.ui.logsText.setTextCursor(cursor)
+
+
 def insertMSG():
     time.sleep(0.15)
     Log.log_write(f"trying to insert alt+v msg: {Glob.altvmsg}", logs = Log.altvLogs)
@@ -1498,17 +1465,15 @@ def insertMSG():
 # =========================
 
 if __name__ == "__main__":
-    default_m_t_c = {"BASE_API": 3.0, "SYNC": 3.0, "FAST_SEARCH": 5.5, "WEAPON_FOR_DB_SEARCH": 5.5, "GROLL": 5.5}
-    for mode, value_default in default_m_t_c.items():
-        val = Glob.mode_to_cooldown.get(mode, -1)
-        if val == -1:
-            Glob.mode_to_cooldown[mode] = value_default
-    Glob.settings["cooldowns"] = Glob.mode_to_cooldown
-    with open(settings_path, "w") as f:
-        json.dump(Glob.settings, f)
     win = MainWindow()
+    default_m_t_c = {"main_page_auctions": 3.0, "fast_check": 7.0, "optimal_search": 7.0, "simple_history": 3.0}
+    for mode, value_default in default_m_t_c.items():
+        val = win.worker.mode_to_cooldown.get(mode, -1)
+        if val == -1:
+            win.worker.set_cooldown(mode, str(value_default))
     for mode in default_m_t_c:
         win.ui.cooldownComboBox.addItem(mode)
+    win.ui.cooldownInput.setText(str(win.worker.mode_to_cooldown[win.ui.cooldownComboBox.currentText()]))
 
     win.ui.buildWeaponPlot.pressed.connect(win.draw_pod_roll_plot)
     win.ui.buildGrollPlot.pressed.connect(win.draw_groll_plot)
@@ -1546,14 +1511,14 @@ if __name__ == "__main__":
     win.ui.saveCooldown.pressed.connect(win.save_cooldown)
     win.ui.grollWeaponComboBoX.currentTextChanged.connect(win.update_groll_ui)
     win.ui.showGrollRivensForStats.pressed.connect(win.show_sold_grolls)
-    win.ui.radioButton.clicked.connect(win.worker.on_turned_on_off)
+    win.ui.radioButton.clicked.connect(win.on_turned_on_off)
     win.ui.cooldownComboBox.currentTextChanged.connect(win.on_mode_combobox_changed)
     win.ui.grollProgress.setMaximum(len(Glob.groll_urls))
     win.ui.podRollProgress.setMaximum(len(Glob.good_weapons))
     win.ui.volumeSlider.valueChanged.connect(win.on_volume_changed)
     win.ui.ensureAccountDataBtn.pressed.connect(win.run_bumper_test)
     win.ui.SaveMarketAccountData.pressed.connect(win.on_save_account_data)
-    Log.log_printer.new_log.connect(win.ui.logsText.setText)
+    Log.log_printer.new_log.connect(win.on_new_log)
 
     #claude
     win.ui.verticalLayout_6.replaceWidget(win.ui.listWidget, win.qml_widget)

@@ -526,7 +526,10 @@ class SuperDatabase:
                 pos_name2 INTEGER,
                 pos_name3 INTEGER,
                 neg_name INTEGER,
-                FOREIGN KEY(pos_name1, pos_name2, pos_name3, neg_name) REFERENCES attributes(id),
+                FOREIGN KEY(pos_name1) REFERENCES attributes(id),
+                FOREIGN KEY(pos_name2) REFERENCES attributes(id),
+                FOREIGN KEY(pos_name3) REFERENCES attributes(id),
+                FOREIGN KEY(neg_name) REFERENCES attributes(id),
                 FOREIGN KEY(weapon_id) REFERENCES weapons(id),
                 FOREIGN KEY(owner_id) REFERENCES owners(id)
             )
@@ -618,7 +621,7 @@ class SuperDatabase:
 
             self.conn.commit()
         except Exception as e:
-            print ("super db init failed")
+            print ("super db init failed", e)
     
     def get_id_from_field(self, value, table, field = "name"):
         self.cursor.execute(f"""
@@ -810,7 +813,7 @@ class SuperDatabase:
     def insert_or_update_riven(self, auction, timestamp):
         riven_text_id = auction["id"]
         item = auction["item"]
-        weapon = item["weapon"]
+        weapon = item["weapon_url_name"]
         owner_item = auction["owner"]
         owner = owner_item["ingame_name"]
         owner_status = owner_item["status"]
@@ -831,7 +834,7 @@ class SuperDatabase:
             SELECT *
             FROM rivens
             WHERE riven_text_id=?
-        """, (riven_text_id))
+        """, (riven_text_id,))
         row:tuple = self.cursor.fetchone()
         riven_id = -1
         if row is None:

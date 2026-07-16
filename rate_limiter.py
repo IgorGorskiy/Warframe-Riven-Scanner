@@ -36,9 +36,11 @@ class RateLimiter:
         headers: dict = HEADERS,
         timeout: int = 10,
     ) -> requests.Response:
+        start_time = time.perf_counter()
         self.cooldown = cooldown
         self.wait()
         r = requests.get(url, headers=headers, timeout=timeout)
+        print(f"[REQUESTER]: {url}")
         self.last_call = time.time()
         if r.status_code != 200:
             play_sound()
@@ -47,4 +49,7 @@ class RateLimiter:
             self.set_interval(15)
             self.last_call = time.time()
             self.wait()
+        end_time = time.perf_counter()
+        execution_time = end_time - start_time
+        print(f"Реквест выполнился за {execution_time:.4f} секунд")
         return r

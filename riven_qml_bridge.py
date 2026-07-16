@@ -70,7 +70,7 @@ class RivenAlertItem(QObject):
         self._auction = auction
 
         # ── dismissable-флаг ──────────────────────────────────────
-        self._dismissable = (reason == "good stats (dismissable)")
+        self._dismissable = True
         if self._dismissable:
             reason = "good stats"
         self._reason = reason
