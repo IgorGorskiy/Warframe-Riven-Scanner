@@ -27,7 +27,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1600, 800)
+        MainWindow.resize(1600, 795)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(1)
@@ -419,6 +419,58 @@ class Ui_MainWindow(object):
         self.horizontalLayout_41.addLayout(self.verticalLayout_5)
 
         self.tabWidget.addTab(self.tab_2, "")
+        self.tab_6 = QWidget()
+        self.tab_6.setObjectName(u"tab_6")
+        self.verticalLayout_9 = QVBoxLayout(self.tab_6)
+        self.verticalLayout_9.setObjectName(u"verticalLayout_9")
+        self.label_18 = QLabel(self.tab_6)
+        self.label_18.setObjectName(u"label_18")
+        self.label_18.setMaximumSize(QSize(16777215, 20))
+
+        self.verticalLayout_9.addWidget(self.label_18)
+
+        self.horizontalLayout_13 = QHBoxLayout()
+        self.horizontalLayout_13.setObjectName(u"horizontalLayout_13")
+        self.verticalLayout_8 = QVBoxLayout()
+        self.verticalLayout_8.setObjectName(u"verticalLayout_8")
+        self.label_20 = QLabel(self.tab_6)
+        self.label_20.setObjectName(u"label_20")
+
+        self.verticalLayout_8.addWidget(self.label_20)
+
+        self.opt_req_queue_edit = QTextEdit(self.tab_6)
+        self.opt_req_queue_edit.setObjectName(u"opt_req_queue_edit")
+
+        self.verticalLayout_8.addWidget(self.opt_req_queue_edit)
+
+        self.save_opt_req_queue = QPushButton(self.tab_6)
+        self.save_opt_req_queue.setObjectName(u"save_opt_req_queue")
+
+        self.verticalLayout_8.addWidget(self.save_opt_req_queue)
+
+
+        self.horizontalLayout_13.addLayout(self.verticalLayout_8)
+
+        self.verticalLayout_10 = QVBoxLayout()
+        self.verticalLayout_10.setObjectName(u"verticalLayout_10")
+        self.label_19 = QLabel(self.tab_6)
+        self.label_19.setObjectName(u"label_19")
+
+        self.verticalLayout_10.addWidget(self.label_19)
+
+        self.opr_req_current_queue_text = QTextEdit(self.tab_6)
+        self.opr_req_current_queue_text.setObjectName(u"opr_req_current_queue_text")
+        self.opr_req_current_queue_text.setReadOnly(True)
+
+        self.verticalLayout_10.addWidget(self.opr_req_current_queue_text)
+
+
+        self.horizontalLayout_13.addLayout(self.verticalLayout_10)
+
+
+        self.verticalLayout_9.addLayout(self.horizontalLayout_13)
+
+        self.tabWidget.addTab(self.tab_6, "")
         self.tab_3 = QWidget()
         self.tab_3.setObjectName(u"tab_3")
         sizePolicy.setHeightForWidth(self.tab_3.sizePolicy().hasHeightForWidth())
@@ -554,7 +606,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.tabWidget.setCurrentIndex(4)
+        self.tabWidget.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -588,6 +640,11 @@ class Ui_MainWindow(object):
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043f\u0438\u0441\u043e\u043a \u043e\u0440\u0443\u0436\u0438\u0439, \u043a\u043e\u0442\u043e\u0440\u044b\u0435 \u0434\u043e\u043b\u0436\u043d\u044b \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u0442\u044c\u0441\u044f \u0447\u0430\u0449\u0435 (FAST_SEARCH):", None))
         self.saveBDweaponsBtn.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u043f\u0438\u0441\u043e\u043a \u043e\u0440\u0443\u0436\u0438\u0439, \u043a\u043e\u0442\u043e\u0440\u044b\u0435 \u0434\u043e\u043b\u0436\u043d\u044b \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u0442\u044c\u0441\u044f \u0447\u0430\u0441\u0442\u043e", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"\u041d\u043e\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0441\u043a\u0430\u043d\u0430", None))
+        self.label_18.setText(QCoreApplication.translate("MainWindow", u"\u0417\u0434\u0435\u0441\u044c \u043c\u043e\u0436\u043d\u043e \u0437\u0430\u0434\u0430\u0442\u044c \u0440\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043e\u043f\u0442\u0438\u043c\u0430\u043b\u044c\u043d\u043e\u0433\u043e \u0440\u0435\u043a\u0432\u0435\u0441\u0442\u0435\u0440\u0430 \u0438 \u043f\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0442\u0435\u043a\u0443\u0449\u0443\u044e \u043e\u0447\u0435\u0440\u0435\u0434\u044c", None))
+        self.label_20.setText(QCoreApplication.translate("MainWindow", u"\u0417\u0430\u0434\u0430\u0442\u044c \u0440\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435", None))
+        self.save_opt_req_queue.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0440\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435", None))
+        self.label_19.setText(QCoreApplication.translate("MainWindow", u"\u0422\u0435\u043a\u0443\u0449\u0430\u044f \u043e\u0447\u0435\u0440\u0435\u0434\u044c", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), QCoreApplication.translate("MainWindow", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0433\u043b\u0443\u0431\u043e\u043a\u043e\u0433\u043e \u043f\u043e\u0438\u0441\u043a\u0430", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), QCoreApplication.translate("MainWindow", u"\u041b\u043e\u0433\u0438", None))
         self.label_13.setText(QCoreApplication.translate("MainWindow", u"\u0413\u0440\u043e\u043c\u043a\u043e\u0441\u0442\u044c \u0434\u043e\u043b\u0431\u0451\u0436\u043a\u0438 \u0424\u0440\u0438\u0440\u0435\u043d", None))
         self.label_14.setText(QCoreApplication.translate("MainWindow", u"\u0414\u0430\u043d\u043d\u044b\u0435 \u0434\u043b\u044f \u0440\u0430\u0431\u043e\u0442\u044b \u0441\u0432\u0438\u043d\u043a\u0438. \u041b\u043e\u0433\u0438\u043d - \u043f\u043e\u0447\u0442\u0430, \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u043c\u0430\u044f \u0434\u043b\u044f \u0432\u0445\u043e\u0434\u0430 \u043d\u0430 \u043c\u0430\u0440\u043a\u0435\u0442. \u041d\u0438\u043a\u043d\u0435\u0439\u043c \u0436\u0435\u043b\u0430\u0442\u0435\u043b\u044c\u043d\u043e \u0431\u0440\u0430\u0442\u044c \u0438\u0437 \u0441\u0441\u044b\u043b\u043a\u0438 \u043d\u0430 \u0441\u0432\u043e\u0439 \u043f\u0440\u043e\u0444\u0438\u043b\u044c \u043c\u0430\u0440\u043a\u0435\u0442\u0430.", None))

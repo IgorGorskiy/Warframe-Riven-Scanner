@@ -21,7 +21,7 @@ from PySide6.QtCore import (
 from PySide6.QtWidgets import QApplication
 
 from rivenstats import STARTING_STATS
-
+from enums import reasons_to_display
 
 # ══════════════════════════════════════════════════════════════════
 #  Helpers (повторяют оригинальные функции)
@@ -71,8 +71,6 @@ class RivenAlertItem(QObject):
 
         # ── dismissable-флаг ──────────────────────────────────────
         self._dismissable = True
-        if self._dismissable:
-            reason = "good stats"
         self._reason = reason
 
         # ── базовые поля ──────────────────────────────────────────
@@ -94,7 +92,7 @@ class RivenAlertItem(QObject):
             quantiles_str = f" | Квантили: q(0.1) = {auction["quantiles"][0]}; q(0.25) = {auction["quantiles"][1]}; q(0.50) = {auction["quantiles"][2]}"
 
         # ── sold riven: переопределяем поля ──────────────────────
-        if reason == "sold riven":
+        if reason == reasons_to_display.manual_request:
             self._weapon       = auction["weapon_name"]
             self._owner_name   = auction["owner_name"]
             self._price        = auction["price"]
@@ -113,7 +111,7 @@ class RivenAlertItem(QObject):
         status_color = value_to_color({"online": 50, "ingame": 100}.get(status, 0))
 
         # ── основной HTML ─────────────────────────────────────────
-        if reason == "sold riven":
+        if reason == reasons_to_display.manual_request:
             pidorstvo_str = ""
             p = auction.get("pidorstvo", 0)
             if p > 0:
@@ -144,7 +142,7 @@ class RivenAlertItem(QObject):
 
         # ── HTML статов ───────────────────────────────────────────
         self._stats_html = ""
-        if reason in ("good stats", "manual request", "sold riven"):
+        if reason in ("good stats", "manual request", "sold riven", reasons_to_display.manual_request, reasons_to_display.below_estimation):
             parts    = "Значения статов:"
             neg_stat = ""
 

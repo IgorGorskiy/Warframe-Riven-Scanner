@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1600</width>
-    <height>800</height>
+    <height>784</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -62,7 +62,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>4</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tab">
          <property name="sizePolicy">
@@ -129,6 +129,75 @@
              </layout>
             </item>
             <item>
+             <widget class="QTabWidget" name="tabWidget_2">
+              <property name="currentIndex">
+               <number>0</number>
+              </property>
+              <widget class="QWidget" name="tab_7">
+               <attribute name="title">
+                <string>Tab 1</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout_11">
+                <item>
+                 <widget class="QLabel" name="label_21">
+                  <property name="text">
+                   <string>График минимальной цены МРа на оружие</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_2">
+                  <item>
+                   <widget class="QComboBox" name="weaponComboBox"/>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="buildWeaponPlot">
+                    <property name="text">
+                     <string>Построить график цены на оружие</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <layout class="QGridLayout" name="gridLayout">
+                  <item row="0" column="1">
+                   <widget class="QLineEdit" name="plotsCount">
+                    <property name="text">
+                     <string>1</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="0">
+                   <widget class="QLabel" name="label_4">
+                    <property name="text">
+                     <string>Позиция МРа (1 - первый в списке маркета)</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <widget class="QGraphicsView" name="weaponPlot">
+                  <property name="minimumSize">
+                   <size>
+                    <width>300</width>
+                    <height>250</height>
+                   </size>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+              <widget class="QWidget" name="tab_8">
+               <attribute name="title">
+                <string>Tab 2</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout_12"/>
+              </widget>
+             </widget>
+            </item>
+            <item>
              <widget class="QScrollArea" name="scrollArea">
               <property name="minimumSize">
                <size>
@@ -147,20 +216,13 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>758</width>
-                 <height>816</height>
+                 <width>446</width>
+                 <height>657</height>
                 </rect>
                </property>
                <layout class="QVBoxLayout" name="verticalLayout_2">
                 <item>
                  <layout class="QVBoxLayout" name="rivenDataLayout">
-                  <item>
-                   <widget class="QPushButton" name="pushButton">
-                    <property name="text">
-                     <string>Вывести логи</string>
-                    </property>
-                   </widget>
-                  </item>
                   <item>
                    <layout class="QHBoxLayout" name="scansAmountLayout">
                     <item>
@@ -229,150 +291,6 @@
                      </spacer>
                     </item>
                    </layout>
-                  </item>
-                  <item>
-                   <layout class="QVBoxLayout" name="progressLayout">
-                    <item>
-                     <layout class="QHBoxLayout" name="horizontalLayout_6">
-                      <item>
-                       <widget class="QLabel" name="label_3">
-                        <property name="text">
-                         <string>Прогресс заноса цен под ролл в бд</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QProgressBar" name="podRollProgress">
-                        <property name="minimumSize">
-                         <size>
-                          <width>100</width>
-                          <height>0</height>
-                         </size>
-                        </property>
-                        <property name="maximumSize">
-                         <size>
-                          <width>1000</width>
-                          <height>16777215</height>
-                         </size>
-                        </property>
-                        <property name="maximum">
-                         <number>100</number>
-                        </property>
-                        <property name="value">
-                         <number>0</number>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QLCDNumber" name="podRollProgressLCD">
-                        <property name="minimumSize">
-                         <size>
-                          <width>0</width>
-                          <height>30</height>
-                         </size>
-                        </property>
-                        <property name="maximumSize">
-                         <size>
-                          <width>60</width>
-                          <height>16777215</height>
-                         </size>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </item>
-                    <item>
-                     <layout class="QHBoxLayout" name="horizontalLayout_7">
-                      <item>
-                       <widget class="QLabel" name="label_5">
-                        <property name="text">
-                         <string>Прогресс сканирования groll ривенов</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QProgressBar" name="grollProgress">
-                        <property name="minimumSize">
-                         <size>
-                          <width>100</width>
-                          <height>0</height>
-                         </size>
-                        </property>
-                        <property name="maximumSize">
-                         <size>
-                          <width>1000</width>
-                          <height>16777215</height>
-                         </size>
-                        </property>
-                        <property name="value">
-                         <number>0</number>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QLCDNumber" name="grollProgressLCD">
-                        <property name="minimumSize">
-                         <size>
-                          <width>0</width>
-                          <height>30</height>
-                         </size>
-                        </property>
-                        <property name="maximumSize">
-                         <size>
-                          <width>60</width>
-                          <height>16777215</height>
-                         </size>
-                        </property>
-                        <property name="intValue" stdset="0">
-                         <number>0</number>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </item>
-                   </layout>
-                  </item>
-                  <item>
-                   <layout class="QHBoxLayout" name="horizontalLayout_2">
-                    <item>
-                     <widget class="QComboBox" name="weaponComboBox"/>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="buildWeaponPlot">
-                      <property name="text">
-                       <string>Построить график цены на оружие</string>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </item>
-                  <item>
-                   <layout class="QGridLayout" name="gridLayout">
-                    <item row="0" column="1">
-                     <widget class="QLineEdit" name="plotsCount">
-                      <property name="text">
-                       <string>1</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="0" column="0">
-                     <widget class="QLabel" name="label_4">
-                      <property name="text">
-                       <string>Позиция МРа (1 - первый в списке маркета)</string>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </item>
-                  <item>
-                   <widget class="QGraphicsView" name="weaponPlot">
-                    <property name="minimumSize">
-                     <size>
-                      <width>300</width>
-                      <height>250</height>
-                     </size>
-                    </property>
-                   </widget>
                   </item>
                   <item>
                    <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -459,78 +377,183 @@
          </attribute>
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
+           <widget class="QTabWidget" name="tabWidget_3">
+            <property name="currentIndex">
+             <number>1</number>
+            </property>
+            <widget class="QWidget" name="tab_9">
+             <attribute name="title">
+              <string>Настройки расписания</string>
+             </attribute>
+             <layout class="QVBoxLayout" name="verticalLayout_13">
+              <item>
+               <widget class="QLabel" name="label_8">
+                <property name="text">
+                 <string>Расписание итерации цикла программы. Желательно не превышать 110 секунд.</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_9">
+                <property name="text">
+                 <string>simple_history - для построения графика цены под ролл</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_10">
+                <property name="text">
+                 <string>optimal_search - для заполнения базы данных для оценки ривенов по статам</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_11">
+                <property name="text">
+                 <string>fast_check - более оперативная проверка ривенов под ролл на отдельное оружие</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolBox" name="toolBox">
+                <property name="currentIndex">
+                 <number>0</number>
+                </property>
+                <widget class="QWidget" name="page_3">
+                 <property name="geometry">
+                  <rect>
+                   <x>0</x>
+                   <y>0</y>
+                   <width>751</width>
+                   <height>332</height>
+                  </rect>
+                 </property>
+                 <attribute name="label">
+                  <string>Задать расписание</string>
+                 </attribute>
+                 <layout class="QVBoxLayout" name="verticalLayout_15">
+                  <item>
+                   <widget class="QTextEdit" name="scheduleText"/>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="saveScheduleBtn">
+                    <property name="text">
+                     <string>Сохранить расписание</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+                <widget class="QWidget" name="page_4">
+                 <property name="geometry">
+                  <rect>
+                   <x>0</x>
+                   <y>0</y>
+                   <width>751</width>
+                   <height>332</height>
+                  </rect>
+                 </property>
+                 <attribute name="label">
+                  <string>Посмотреть выполняемое расписание</string>
+                 </attribute>
+                 <layout class="QVBoxLayout" name="verticalLayout_16">
+                  <item>
+                   <widget class="QTextEdit" name="executingScheduleText"/>
+                  </item>
+                 </layout>
+                </widget>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox">
+                <property name="title">
+                 <string>Настройка кулдаунов для запросов</string>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_14">
+                 <item>
+                  <layout class="QVBoxLayout" name="verticalLayout_4">
+                   <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_6">
+                     <item>
+                      <widget class="QLabel" name="label_5">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="text">
+                        <string>Тип запроса</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QComboBox" name="cooldownComboBox">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_7">
+                     <item>
+                      <widget class="QLabel" name="label_3">
+                       <property name="text">
+                        <string>Время ожидания после запроса, в секундах</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="cooldownInput">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="saveCooldown">
+                     <property name="text">
+                      <string>Сохранить время ожидания</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+            <widget class="QWidget" name="tab_10">
+             <attribute name="title">
+              <string>Tab 2</string>
+             </attribute>
+             <layout class="QVBoxLayout" name="verticalLayout_17">
+              <item>
+               <widget class="QGroupBox" name="groupBox_2">
+                <property name="title">
+                 <string>Общий список оружий и максимальных цен под ролл</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </widget>
+          </item>
+          <item>
            <layout class="QVBoxLayout" name="verticalLayout_5">
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_8">
-              <item>
-               <layout class="QVBoxLayout" name="verticalLayout_4">
-                <item>
-                 <widget class="QLabel" name="label_8">
-                  <property name="text">
-                   <string>Расписание итерации цикла программы. Не должно превышать 110 секунд</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_9">
-                  <property name="text">
-                   <string>WEAPON_FOR_DB_SEARCH - для построения графика цены под ролл</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_10">
-                  <property name="text">
-                   <string>GROLL - для поиска хороших ривенов в начале работы и для построения графика цены хороших ривенов</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_11">
-                  <property name="text">
-                   <string>FAST_SEARCH - более оперативная проверка ривенов под ролл на отдельное оружие</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="stage_label">
-                  <property name="text">
-                   <string>Текущий режим:</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QTextEdit" name="scheduleText"/>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="saveScheduleBtn">
-                  <property name="text">
-                   <string>Сохранить расписание</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_12">
-                  <property name="text">
-                   <string>Время ожидания после запроса (в секундах)</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QComboBox" name="cooldownComboBox"/>
-                </item>
-                <item>
-                 <widget class="QLineEdit" name="cooldownInput"/>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="saveCooldown">
-                  <property name="text">
-                   <string>Сохранить время ожидания</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
               <item>
                <layout class="QVBoxLayout" name="verticalLayout_3">
                 <item>
@@ -578,12 +601,68 @@
               </item>
              </layout>
             </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_6">
+         <attribute name="title">
+          <string>Настройки глубокого поиска</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_9">
+          <item>
+           <widget class="QLabel" name="label_18">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Здесь можно задать расписание оптимального реквестера и посмотреть текущую очередь</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_13">
             <item>
-             <widget class="QLineEdit" name="lineEdit">
-              <property name="readOnly">
-               <bool>true</bool>
-              </property>
-             </widget>
+             <layout class="QVBoxLayout" name="verticalLayout_8">
+              <item>
+               <widget class="QLabel" name="label_20">
+                <property name="text">
+                 <string>Задать расписание</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QTextEdit" name="opt_req_queue_edit"/>
+              </item>
+              <item>
+               <widget class="QPushButton" name="save_opt_req_queue">
+                <property name="text">
+                 <string>Сохранить расписание</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_10">
+              <item>
+               <widget class="QLabel" name="label_19">
+                <property name="text">
+                 <string>Текущая очередь</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QTextEdit" name="opr_req_current_queue_text">
+                <property name="readOnly">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
            </layout>
           </item>
@@ -622,6 +701,13 @@
          <layout class="QHBoxLayout" name="horizontalLayout_9">
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_7">
+            <item>
+             <widget class="QPushButton" name="pushButton">
+              <property name="text">
+               <string>Вывести логи</string>
+              </property>
+             </widget>
+            </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_10">
               <item>

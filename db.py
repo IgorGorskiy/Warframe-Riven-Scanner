@@ -8,6 +8,8 @@ import copy
 from datetime import datetime, time, date, timezone, timedelta
 import time
 
+cur_dir = os.path.dirname(os.path.abspath(__file__))
+
 def are_values_close(arg1, arg2, max_difference_percentage):
     abs_dif = abs(arg1 - arg2)
     relation = abs_dif / arg1
@@ -733,6 +735,11 @@ class SuperDatabase:
         """, (hash_id, new_id))
         self.conn.commit()
 
+    def dump_auctions(self, auctions):
+        path = os.path.join(cur_dir, "AUCTIONS " + str(time.time()))
+        with open(path, "w") as f:
+            json.dump(auctions, f)
+
     def process_rivens_from_requester(self, auctions, search_hash, timestamp):
         hash_id = self.get_id_from_field(search_hash, "scan_params", "hash")
         old_ids = self.get_previous_rivens_ids(hash_id)
@@ -740,7 +747,15 @@ class SuperDatabase:
         self.add_search_timestamp(timestamp, hash_id)
         # cначала эубрабатываем все пришедшие аукционы, а уже затем смотрим, какие ауки пропали
         new_ids = []
+        market_ids = []
+        dumped = False
         for auction in auctions:
+            market_id = auction["id"]
+            if not market_id in market_ids:
+                market_ids.append(market_id)
+            else:
+                if not dumped:
+                    self.dump_auctions(auctions)
             r_id = self.insert_or_update_riven(auction, timestamp)
             new_ids.append(r_id)
         # находим пропавшие ривены. обновляем статус, удаляем id из prev_scanned_rivens
@@ -827,6 +842,7 @@ class SuperDatabase:
         att_ids = self.get_attributes_ids(att_names)
         updated = int(self.iso_to_timestamp(auction["updated"]))
         created = int(self.iso_to_timestamp(auction["created"]))
+        owner_last_seen = int(self.iso_to_timestamp(owner_item["last_seen"]))
 
         already_existed = False
 

@@ -5,6 +5,7 @@
 import time
 import requests
 import winsound
+from log_printer import LogPrinter, Log
 
 HEADERS = {"accept": "application/json", "platform": "pc"}
 
@@ -40,7 +41,7 @@ class RateLimiter:
         self.cooldown = cooldown
         self.wait()
         r = requests.get(url, headers=headers, timeout=timeout)
-        print(f"[REQUESTER]: {url}")
+        Log.log_write(f"[REQUESTER]: {url}")
         self.last_call = time.time()
         if r.status_code != 200:
             play_sound()
@@ -51,5 +52,5 @@ class RateLimiter:
             self.wait()
         end_time = time.perf_counter()
         execution_time = end_time - start_time
-        print(f"Реквест выполнился за {execution_time:.4f} секунд")
+        Log.log_write(f"Реквест выполнился за {execution_time:.4f} секунд")
         return r

@@ -178,6 +178,7 @@ class QueueManager():
             json.dump(settings, f)
 
     def fill_optimal_requester(self, opt_req:OptimalRequester, do_step = True):
+        Log.log_write("fill_optimal_requester")
         const_q = self.const_queues[self.queues.search_params]
         opt_req.clear_queue()
         for elem in const_q:
@@ -214,7 +215,7 @@ class OptimalSchedule:
 
     def start_main_loop(self):
         if self.unsynchronised:
-            print("schedule execution starts now")
+            Log.log_write("schedule execution starts now")
             self.unsynchronised = False
             self.refresh_time = time.time() + self.interval
 
@@ -421,7 +422,6 @@ class AuctionWorker(QThread):
         self.rate_limiter = RateLimiter(3)
         self.requester = OptimalRequester(self.rate_limiter)
         self.requester.load_cache_from_file(cache_path)
-        self.requester.queue_exhausted.connect(self.on_optimal_requester_queue_exhausted)
         self.requester.auctions_ready.connect(self.process_optimal_requester_auctions)
         self.queue_manager = QueueManager(settings_path, self.requester)
         self.schedule_manager = OptimalSchedule(self.queue_manager)
@@ -438,7 +438,7 @@ class AuctionWorker(QThread):
         self.running = True
 
         def on_ready(params, auctions, t_start, t_end):
-            print(
+            Log.log_write(
                 f"\n=== ГОТОВО: {params} — {len(auctions)} аукционов "
                 f"за {t_end - t_start:.1f} с ==="
             )
@@ -454,10 +454,16 @@ class AuctionWorker(QThread):
                 continue
             try:
                 mode = self.schedule_manager.get_stage()
+                Log.log_write(f"Итерация началась, mode = {mode}")
                 if mode == modes.optimal_search:
                     # поскольку requester хранит свой кулдаун внутри себя, задаём ему кулдаун перед каждым его использованием.
                     self.requester.set_cooldown(self.mode_to_cooldown[modes.optimal_search])
-                    self.requester.do_step()
+                    done = self.requester.do_step()
+                    if not done:
+                        self.on_optimal_requester_queue_exhausted()
+                        done = self.requester.do_step()
+                        if not done:
+                            print("ERROR: failed to fill requester queue")
                 elif mode == modes.main_page_auctions:
                     r = self.rate_limiter.get_response(API_AUCTIONS, self.mode_to_cooldown[modes.main_page_auctions], HEADERS, 10)
                     self.process_main_page(r)
@@ -471,7 +477,7 @@ class AuctionWorker(QThread):
                 print("traceback:" + traceback.format_exc())
             end_time = time.perf_counter()
             execution_time = end_time - start_time
-            print(f"Итерация выполнилась за {execution_time:.4f} секунд, mode = {mode}")
+            Log.log_write(f"Итерация выполнилась за {execution_time:.4f} секунд, mode = {mode}")
 
     def stop(self):
         self.running = False

@@ -32,6 +32,8 @@ from myplot import PricePlot
 from password_storage import CredentialsStorage
 from log_printer import LogPrinter, Log
 from auction_worker import AuctionWorker
+from optimal_requester import UrlParameters
+from riven_qml_bridge import value_to_color
 import pandas as pd
 import numpy as np
 
@@ -40,11 +42,11 @@ from PySide6.QtWidgets import (
     QLabel, QPushButton, QListWidget, QListWidgetItem,
     QVBoxLayout, QHBoxLayout, QLineEdit, QGroupBox,
     QLCDNumber, QSpacerItem, QSizePolicy, QGraphicsView, QTextEdit,
-    QMessageBox
+    QMessageBox, QComboBox, QCompleter
 )
 
 from PySide6.QtCore import Qt, QSize, QDateTime, QStringConverter
-from PySide6.QtCore import Signal, QThread, QObject
+from PySide6.QtCore import Signal, QThread, QObject, Qt
 from PySide6.QtMultimedia import QMediaPlayer
 
 # перевод rivenalertwidget на qml   
@@ -225,13 +227,6 @@ def build_groll_urls(raw_stats):
              pos_stats.append(var_stat)
              url = build_URL(pos_stats, weapon)
              urls.append(url)
-        # for var_stat in ALL_STATS:
-        #     if var_stat in const_stats or var_stat == "any":
-        #         continue
-        #     pos_stats = const_stats.copy()
-        #     pos_stats.append(var_stat)
-        #     url = build_URL(pos_stats, weapon)
-        #     urls.append(url)
     print (f"amount of groll urls: {len(urls)}")
     return urls
 
@@ -255,180 +250,6 @@ def play_sound():
         winsound.Beep(600, 300)
     except Exception:
         pass
-
-# =========================
-# RATE LIMITER
-# =========================
-
-class RateLimiter:
-    def __init__(self, interval_sec):
-        self.cooldown = interval_sec
-        self.last_call = 0
-
-    def wait(self):
-        delta = time.time() - self.last_call
-        if delta < self.cooldown:
-            time.sleep(self.cooldown - delta)
-
-    def set_interval(self, interval_sec):
-        self.cooldown = interval_sec
-
-    def get_response(self, URL, cooldown, headers=HEADERS, timeout=10):
-        self.cooldown = cooldown
-        #print(f"[get_response] entrance: {time.time()}s; cooldown = {self.cooldown}; last_call = {self.last_call}")
-        self.wait()
-        #print(f"[get_response] waited. time: {time.time()}s; cooldown = {self.cooldown}; last_call = {self.last_call}")
-        r = requests.get(URL, headers = headers, timeout = timeout)
-        self.last_call = time.time()
-        return r
-
-# =========================
-# RIVEN CHECK (старый функционал)
-# =========================
-
-def minutes_since_updated(updated_str: str) -> int:
-    updated_dt = datetime.fromisoformat(updated_str)
-    now = datetime.now(timezone.utc)
-    delta = now - updated_dt
-    return int(delta.total_seconds() // 60)
-
-def riven_alert_check(auction) -> str:
-    buyout = auction.get("buyout_price")
-    item = auction.get("item", {})
-    if not buyout or buyout <= 1:
-        return "none"
-    if item.get("type") != "riven":
-        return "none"
-    updated = auction.get("updated")
-    re_rolls = item.get("re_rolls", 0)
-    weapon = item.get("weapon_url_name")
-    
-    # предотвращаем попадания good-ролльных ривенов из запроса для бд
-    if minutes_since_updated(updated) > 120:
-        return "none"
-    
-    if are_stats_good(auction):
-        return "good stats"
-
-    if minutes_since_updated(updated) > 4:
-        return "none"
-
-    if re_rolls / buyout > 3 and re_rolls > 50:
-        return "endo"
-
-    if weapon in Glob.good_weapons and buyout <= Glob.good_weapons[weapon]:
-        return "pod roll"
-    
-    return "none"
-
-def is_riven_pod_roll(auction):
-    buyout = auction.get("buyout_price")
-    item = auction.get("item", {})
-    if not buyout or buyout <= 1:
-        return False
-    if item.get("type") != "riven":
-        return False
-    updated = auction.get("updated")
-    weapon = item.get("weapon_url_name")
-    if minutes_since_updated(updated) > 4:
-        return False
-    if weapon in Glob.good_weapons and buyout <= Glob.good_weapons[weapon]:
-        return True
-    else:
-        return False
-
-def is_riven_endo(auction):
-    buyout = auction.get("buyout_price")
-    item = auction.get("item", {})
-    if not buyout or buyout <= 1:
-        return False
-    if item.get("type") != "riven":
-        return False
-    re_rolls = item.get("re_rolls", 0)
-    if re_rolls / buyout > 3 and re_rolls > 50:
-        return True
-    else:
-        return False
-
-def is_non_interesting_weapon_groll(attributes):
-    interesting = 0
-    for stat in attributes:
-        if stat.get("positive", 0) == True and (stat.get("url_name") in GOOD_STATS):
-            interesting += 1
-        elif stat.get("positive", 0) == False and (stat.get("url_name") in GOOD_NEGATIVES):
-            interesting += 1
-    if interesting < 4:
-        interesting = 0
-    for stat in attributes:
-        if stat.get("positive", 0) == True and (stat.get("url_name") in GOOD_STATS_MELEES1):
-            interesting += 1
-        elif stat.get("positive", 0) == False and (stat.get("url_name") in GOOD_NEGATIVES_MELEES):
-            interesting += 1
-    if interesting < 4:
-        interesting = 0
-    for stat in attributes:
-        if stat.get("positive", 0) == True and (stat.get("url_name") in GOOD_STATS_MELEES2):
-            interesting += 1
-        elif stat.get("positive", 0) == False and (stat.get("url_name") in GOOD_NEGATIVES_MELEES):
-            interesting += 1
-    if interesting < 4:
-        return False
-    else:
-        return True
-
-
-def are_stats_good(auction):
-    buyout = auction.get("buyout_price")
-    updated = auction.get("updated")
-    owner = auction["owner"]
-    item = auction.get("item", {})
-    if not buyout or buyout <= 1:
-        return False
-    if item.get("type") != "riven":
-        return False
-    if owner["ingame_name"] == "--Cube":
-        return 0
-    if owner["ingame_name"] == "Naixon-Samir":
-        return 0
-    if owner["ingame_name"] == "ClosedLifer2":
-        return 0
-    attributes = item.get("attributes", {})
-    #if minutes_since_updated(updated) > 4 and not item["weapon_url_name"] in Glob.good_weapons:
-    #    return 0
-    if len(attributes) < 4:
-        return 0
-    #пенис пися попа сосал
-    if item["weapon_url_name"] in groll_raw_stats:
-        constscore = 0
-        varscore = 0
-        stats = []
-        for stat in attributes:
-            if stat.get("positive", 0) == False:
-                neg_stat_name = stat.get("url_name")
-            if stat.get("positive", 0) == True and (stat.get("url_name") in groll_raw_stats[item["weapon_url_name"]]["const"]):
-                constscore += 1
-                stats.append(stat.get("url_name"))
-            elif stat.get("positive", 0) == True and (stat.get("url_name") in groll_raw_stats[item["weapon_url_name"]]["var"]):
-                varscore += 1
-                stats.append(stat.get("url_name"))
-            elif stat.get("positive", 0) == False and not (stat.get("url_name") in groll_raw_stats[item["weapon_url_name"]]["neg"]):
-                return 0
-        if constscore == 2 and varscore == 1:
-            product:str = item["weapon_url_name"]
-            stats.sort()
-            for stat in stats:
-                product += stat
-            product += neg_stat_name
-            auction["quantiles"] = win.analyser.get_quantiles(product, 0.1, 0.25, 0.5)
-            return 1
-        else:
-            return 0
-        
-    if is_non_interesting_weapon_groll(attributes):
-        return 1
-    #if  auction["buyout_price"] > 500 and not item["weapon_url_name"] in Glob.good_weapons:
-    #    return 0
-    return 0
 
 # =========================
 # WORKER THREAD
@@ -478,402 +299,6 @@ class RivenAnalyser:
         result32 = self.analyser.calculate_q(prices, q2)
         result33 = self.analyser.calculate_q(prices, q3)
         return [result31, result32, result33]
-
-class AuctionWorker_old(QThread):
-    price_checked = Signal(str, list)  # auction_id, prices
-    alert_found = Signal(dict, str)
-    newRivensCountUpdate = Signal(int)
-    groll_urls_progress = Signal(int)
-    pod_roll_progress = Signal(int)
-
-    def __init__(self, db: RivenDatabase, pod_roll_db:PodRollDB):
-        super().__init__()
-        self.market_limiter = RateLimiter(2)  # 2 запрос / сек
-        r = self.market_limiter.get_response("https://api.warframe.market/v2/riven/weapons", 2, HEADERS, 10)
-        weapons = r.json()["data"]
-        self.weapon_rivens = {}
-        for w in weapons:
-            self.weapon_rivens[w["slug"]] = w
-        self.price_queue = deque()
-        self.db = db
-        self.pod_roll_db = pod_roll_db
-        self.running = True
-        self.seen_ids_all = set()
-        self.newRivensCount = 0
-        self.groll_url_in_queue = ""
-        self.tracked_grolls = {}
-        self.sold_grolls = {}
-        self.grolls_to_dismiss = self.db.get_dismiss_list()
-
-    def write_prices_to_db(self, auctions):
-        item = auctions[0].get("item")
-        weapon = item["weapon_url_name"]
-        i = 0
-        prices = []
-        Log.log_write(f"starting writing to DB data for {weapon}; amount of auctions: {len(auctions)}")
-        offline_count = 0
-        for auction in auctions:
-            owner = auction["owner"]
-            status = owner["status"]
-            if status == "offline":
-                offline_count = offline_count + 1
-            if status != "offline":
-                prices.append(auction["buyout_price"])
-                i = i + 1
-            if i >= 3:
-                break
-        Log.log_write(f"writing to DB data: {prices} || for time: {int(time.time())}")
-
-        while len(prices) < 3:
-            prices.append(-1)
-        self.pod_roll_db.insert_prices(weapon, prices[0], prices[1], prices[2], int(time.time()))
-
-        for a in auctions:
-            if a["owner"]["status"] == "online" or a["owner"]["status"] == "ingame":
-                prices.append(a["buyout_price"])
-            if len(prices) == 3:
-                break
-        if type(prices) == "NoneType":
-            prices = [-1, -1, -1]
-            print(prices)
-        return prices
-    
-    def count_avg_lowest_price(self, price, product):
-        data = self.db.get_price_history(product)
-        if len(data) == 0:
-            return True
-        if not data:
-            return False
-        prices = data[1]
-        if len(prices) > 100:
-            prices = prices[-100:-1]
-        if len(prices) == 0:
-            avg_price = 9999999
-        else:
-            avg_price = sum(prices) / len(prices)
-        return avg_price
-
-    def is_groll_high_stasts(self, auction, avg_price):
-        price = auction["buyout_price"]
-        item = auction["item"]
-        weapon:str = auction["item"]["weapon_url_name"]
-        rank = item.get("mod_rank", 0)
-        attributes = item.get("attributes", [])
-        total_score = 0
-        for stat in attributes:
-            if stat["positive"] != True:
-                neg_stat = stat["url_name"]
-                continue
-            stat_name = stat["url_name"]
-            w_type = self.weapon_rivens[weapon]["rivenType"]
-            if w_type in STARTING_STATS:
-                dispo = self.weapon_rivens[weapon]["disposition"]
-                base_value = STARTING_STATS[w_type][stat_name]
-                maxval = 1.1*0.9375*dispo*base_value
-                minval = 0.9*0.9375*dispo*base_value
-                val = stat["value"]
-                if rank < 4 and stat["value"] < minval: #подтираем жопу за дибилами, которые пишут статы для макс мода к моду 0 ранга
-                    val = stat["value"] / ((rank + 1) / 9.0) #приводим статы к виду мода 8-го ранга
-                max = maxval - minval
-                cur = val - minval
-                percentage:int = int(100*cur/max)
-                if (percentage > 100):
-                    percentage = 100
-                elif (percentage < 0):
-                    percentage = 0
-                total_score += percentage
-        if total_score > 150 and avg_price * 0.9 > price:
-            return True
-        elif total_score > 200 and avg_price * 1.0 > price:
-            return True 
-        elif total_score > 250 and avg_price * 1.5 > price:
-            return True
-        else:
-            return False
-    
-    def write_groll_prices_to_db(self, auctions):
-        if len(auctions) == 0:
-            return
-        #self.total_len += len(auctions)
-        #self.total_stats += 1
-        #print(len(auctions))
-        #print (f"total len: {self.total_len}; amount of stats: {self.total_stats}")
-        weapon:str = auctions[0]["item"]["weapon_url_name"]
-        Log.log_write(f"starting writing to GROLL DB data for {weapon}; amount of auctions: {len(auctions)}")
-        checked_negs = []
-        current_aucs_ids = []
-        p_prod_key = ""
-        for auction in auctions:
-            current_aucs_ids.append(auction["id"])
-            owner = auction["owner"]
-            status = owner["status"]
-            last_seen = owner["last_seen"]
-            o_name = owner["ingame_name"]
-            item = auction.get("item")
-            #self.re_rolls.append(item.get("re_rolls", 0))
-            price = auction["buyout_price"]
-            rank = item.get("mod_rank", 0)
-            val_den = (rank + 1) / 9.0
-            stats = []
-            neg_stat_name = ""
-            neg_stat_value = 0
-            pos_att_name_to_val = {}
-            for att in item["attributes"]:
-                if att["positive"] == False:
-                    neg_stat_name = att["url_name"]
-                    neg_stat_value = att["value"]
-                else:
-                    stats.append(att["url_name"])
-                    pos_att_name_to_val[att["url_name"]] = att["value"]
-            stats.sort()
-            product:str = weapon
-            values = []
-            for stat in stats:
-                product += stat
-                values.append(pos_att_name_to_val[stat])
-            partial_prod_key = product
-            p_prod_key = partial_prod_key
-            product += neg_stat_name
-            if neg_stat_name in groll_raw_stats[weapon]["neg"]:
-                if price is None:
-                    continue
-                avg_price = self.count_avg_lowest_price(price, product)
-                if not avg_price or avg_price is None:
-                    avg_price = 9999999
-                    print (f"no avg price for {weapon} {stats} {neg_stat_name}")
-                if avg_price * 0.8 > price or self.is_groll_high_stasts(auction, avg_price):
-                    auction["quantiles"] = win.analyser.get_quantiles(product, 0.1, 0.25, 0.5)
-                    self.alert_found.emit(auction, "good stats (dismissable)")
-            iso_updated = auction["updated"]
-            dt_obj = datetime.fromisoformat(iso_updated) + timedelta(hours=3)
-            last_updated = int(dt_obj.timestamp())
-            auc = {}
-            auc["ts"] = 0
-            auc["price"] = price
-            auc["last_checked"] = int(time.time())
-            auc["last_updated"] = last_updated
-            auc["owner_name"] = o_name
-            auc["value1"] = values[0]/val_den
-            auc["value2"] = values[1]/val_den
-            auc["value3"] = values[2]/val_den
-            auc["value4"] = neg_stat_value/val_den
-            auc["statname1"] = stats[0]
-            auc["statname2"] = stats[1]
-            auc["statname3"] = stats[2]
-            auc["statname4"] = neg_stat_name
-            auc["weapon_name"] = weapon
-            auc["product"] = product
-            # проверка на кубоидных говнопидоров
-            if product in self.sold_grolls:
-                aucs_to_remove = []
-                for sold_auc in self.sold_grolls[product]:
-                    if sold_auc["owner_name"] == o_name:
-                        print (f"ОБНАРУЖЕН КУБОИДНЫЙ ГОВНОПИДОР ПО КЛИЧКЕ {o_name}")
-                        update_blacklist(o_name)
-                        self.db.delete_sold_riven(sold_auc["product"], sold_auc["owner_name"])
-                        aucs_to_remove.append(sold_auc)
-                for todel in aucs_to_remove:
-                    self.sold_grolls[product].remove(todel)
-            if not partial_prod_key in self.tracked_grolls:
-                aucdict = {auction["id"]: auc}
-                self.tracked_grolls[partial_prod_key] = aucdict
-            else:
-                self.tracked_grolls[partial_prod_key][auction["id"]] = auc
-            if (minutes_since_updated(last_seen) < 1440) and (not (neg_stat_name in checked_negs)):
-                checked_negs.append(neg_stat_name)
-            else:
-                continue
-            self.db.insert_price(product, price, int(time.time()))
-        Log.log_write(f"writing to DB groll data for {p_prod_key}")
-        ids_to_pop_for_current_prod = []
-        for riven_id in self.tracked_grolls[p_prod_key].keys():
-            if not riven_id in current_aucs_ids:
-                auc = self.tracked_grolls[p_prod_key][riven_id]
-                auc["ts"] = int(time.time())
-                self.db.insert_sold_riven(auc, auc["product"])
-                print (f"Продан ривен на {auc["weapon_name"]} со статами: {auc["statname1"]}, {auc["statname2"]}, {auc["statname3"]}; минус: {auc["statname4"]} за {auc["price"]} платины")
-                if not auc["product"] in self.sold_grolls:
-                    self.sold_grolls[auc["product"]] = [auc]
-                else:
-                    self.sold_grolls[auc["product"]].append(auc)
-                ids_to_pop_for_current_prod.append(riven_id)
-        for c_id in ids_to_pop_for_current_prod:
-            self.tracked_grolls[p_prod_key].pop(c_id)
-        #if self.groll_url_id >= self.groll_url_len or self.total_stats >= self.groll_url_len:
-            #print (f"\n\n-------------------------\ntotal len: {self.total_len}; amount of stats: {self.total_stats}")
-            #d = {"re_rolls_list_sorted": self.re_rolls.sort()}
-            #print(d)
-            #with open(test_path) as f:
-            #    json.dump(d, f)
-            #self.total_len = 0
-            #self.total_stats = 0
-
-    def run(self):
-        self.re_rolls = []
-        self.total_len = 0
-        self.total_stats = 0
-        self.firstRun = True
-        #weapons_list = list(good_weapons.keys())
-        self.fast_weap_id = 0
-        self.groll_url_len = len(Glob.groll_urls)
-        self.groll_url_id = 0
-        self.good_weapons_id = 0
-        self.good_weapons_len = len(Glob.good_weapons)
-        self.good_weapons_list = list(Glob.good_weapons)
-        written_to_db = 0
-        self.stage_id = 0
-        self.mode = "SYNC"
-        self.sync_needed = True
-        self.turned_off = False
-        last_api_updae = time.time()
-        while self.running and (not self.isInterruptionRequested()):
-            try:
-                Log.log_write(f"starting iteration with following parameters: groll_url_len = {self.groll_url_len}; good_weapons_len ="
-                              f" {self.good_weapons_len}; fast_weapons_length = {len(Glob.fast_weapons_list)}; fast_weap_id = "
-                              f"{self.fast_weap_id}; good_weapons_id = {self.good_weapons_id}; groll_url_id = {self.groll_url_id}; "
-                              f"mode = {self.mode}; firstRun = {self.firstRun}; sync_needed = {self.sync_needed}; turned_off = "
-                              f"{self.turned_off}; stage_id = {self.stage_id}; amount of stages = {len(Glob.schedule)}; "
-                              f"cooldown = {Glob.mode_to_cooldown[self.mode]}")
-                if self.sync_needed and self.turned_off != True:
-                    self.mode = "SYNC"
-                    self.firstRun = True
-                    self.sync_needed = False
-                if self.turned_off:
-                    self.market_limiter.set_interval(14)
-                    self.market_limiter.last_call = time.time()
-                    self.market_limiter.wait()
-                    continue
-                if self.mode != "BASE_API" and self.mode != "SYNC":
-                    if self.stage_id >= len(Glob.schedule):
-                        self.stage_id = 0
-                        self.mode = "BASE_API"
-                    else:
-                        self.mode = Glob.schedule[self.stage_id]
-                win.ui.stage_label.setText(f"Текущий режим: {self.mode}; стадия: {self.stage_id + 1}")
-                win.ui.seconds_from_update.display(int(time.time() - last_api_updae))
-                r = {}
-                if self.fast_weap_id >= len(Glob.fast_weapons_list):
-                    self.fast_weap_id = 0
-                if self.good_weapons_id >= self.good_weapons_len:
-                    win.ui.podRollProgressLCD.display(win.ui.podRollProgressLCD.value() + 1)
-                    self.good_weapons_id = 0
-                if self.groll_url_id >= self.groll_url_len:
-                    win.ui.grollProgressLCD.display(win.ui.grollProgressLCD.value() + 1)
-                    self.groll_url_id = 0
-                if self.mode == "GROLL":
-                    errStr = "GROLL"
-                    Log.log_write(f"requesting GROLL")
-                    groll_url = Glob.groll_urls[self.groll_url_id]
-                    r = self.market_limiter.get_response(groll_url, Glob.mode_to_cooldown[self.mode], headers=HEADERS, timeout=10)
-                    self.groll_url_id = self.groll_url_id + 1
-                    self.groll_urls_progress.emit(self.groll_url_id)
-                elif self.mode == "BASE_API" or self.mode == "SYNC":
-                    errStr = f"API_AUCTIONS; mode = {self.mode}"
-                    Log.log_write(f"requesting API_AUCTIONS; mode = {self.mode}")
-                    r = self.market_limiter.get_response(API_AUCTIONS, Glob.mode_to_cooldown[self.mode], headers=HEADERS, timeout=10)
-                    #r = self.market_limiter.get_response("https://api.warframe.market/v1/auctions/search?type=riven&positive_stats=multishot,critical_chance,critical_damage&negative_stats=zoom&sort_by=price_asc&weapon_url_name=acceltra", 7, headers=HEADERS, timeout=10)
-                    i = 0
-                elif self.mode == "FAST_SEARCH":
-                    Log.log_write(f"FAST_SEARCH. self.fast_weap_id = {self.fast_weap_id}")
-                    weapon_fast = Glob.fast_weapons_list[self.fast_weap_id]
-                    Log.log_write(f"got fast weapon. weapon = {weapon_fast}")
-                    errStr = f"FAST_SEARCH: BASE_WEAPONS_URL + {weapon_fast}"
-                    Log.log_write(f"FAST_SEARCH: requesting BASE_WEAPONS_URL + {weapon_fast}, i = {i}")
-                    r = self.market_limiter.get_response(BASE_WEAPONS_URL + weapon_fast, Glob.mode_to_cooldown[self.mode], headers=HEADERS, timeout=10)
-                    self.fast_weap_id = self.fast_weap_id + 1
-                elif self.mode == "WEAPON_FOR_DB_SEARCH":
-                    Log.log_write(f"getting weapon_for_db. good_weapons_id = {self.good_weapons_id}")
-                    weapon_for_db = self.good_weapons_list[self.good_weapons_id]
-                    Log.log_write(f"got weapon_for_db. weapon_for_db = {weapon_for_db}")
-                    errStr = f"WEAPON_FOR_DB_SEARCH: BASE_WEAPONS_URL + {weapon_for_db}"
-                    Log.log_write(f"WEAPON_FOR_DB_SEARCH: requesting BASE_WEAPONS_URL + {weapon_for_db}, i = {i}")
-                    r = self.market_limiter.get_response(BASE_WEAPONS_URL + weapon_for_db, Glob.mode_to_cooldown[self.mode], headers=HEADERS, timeout=10)
-                    self.good_weapons_id = self.good_weapons_id + 1
-                    written_to_db = written_to_db + 1
-                    self.pod_roll_progress.emit(self.good_weapons_id)
-                if r.status_code != 200:
-                    play_sound()
-                    play_sound()
-                    print("HTTP error in " + errStr + ": ", r.status_code, r.text[:200])
-                    Log.log_print()
-                    self.market_limiter.set_interval(15)
-                    self.market_limiter.last_call = time.time()
-                    self.market_limiter.wait()
-                    self.market_limiter.set_interval(7)
-                    with open("RIVEN_ENDO_ERROR_LOG_" + QDateTime.currentDateTime().toString().replace(" ", "_").replace(":", "-") + ".txt", "w") as f:
-                        f.write(QDateTime.currentDateTime().toString().replace(" ", "_") + "\n")
-                        f.write("HTTP error in " + errStr + ": " + r.text[:200] + "\n")
-                        f.write("traceback:" + traceback.format_exc())
-                        for log in Log.logs:
-                            f.write(log + "\n")
-                    f.close
-                if self.mode != "BASE_API" and self.mode != "SYNC":
-                    self.stage_id += 1
-
-                last_api_updae_formated = datetime.fromtimestamp(last_api_updae).time()
-                Log.log_write(f"last_api_updae = {last_api_updae_formated}")
-                auctions = r.json()["payload"]["auctions"]
-                Log.log_write(f"got {len(auctions)} auctions. mode: {self.mode}")
-
-                self.newRivensCount = 0
-                if self.mode == "WEAPON_FOR_DB_SEARCH":
-                    self.write_prices_to_db(auctions)
-                if self.mode == "GROLL":
-                    self.write_groll_prices_to_db(auctions)
-                elif self.mode == "BASE_API" or self.mode == "WEAPON_FOR_DB_SEARCH" or self.mode == "SYNC" or self.mode == "FAST_SEARCH":
-                    emitted = 0
-                    for auction in auctions:
-                        #reason = riven_alert_check(auction)
-                        reason = "none"
-                        if is_riven_pod_roll(auction):
-                            reason = "pod roll"
-                        elif is_riven_endo(auction):
-                            reason = "endo"
-                        elif are_stats_good(auction) and self.mode != "WEAPON_FOR_DB_SEARCH" and self.mode != "FAST_SEARCH":
-                            reason = "good stats"
-                        item = auction["item"]
-                        att = item.get("attributes", {})
-                        if reason != "none":
-                            self.alert_found.emit(auction, reason)
-                        auc_id = auction.get("id")
-                        if not (auc_id in self.seen_ids_all):
-                            self.seen_ids_all.add(auc_id)
-                            self.newRivensCount = self.newRivensCount + 1
-                if self.newRivensCount > 0 and not (self.firstRun) and (self.mode == "BASE_API" or self.mode == "SYNC"):
-                    Log.log_write(f"api update detected. sync aquired. last_call = {self.market_limiter.last_call}s")
-                    self.newRivensCountUpdate.emit(self.newRivensCount)
-                    #self.mode = "WEAPON_FOR_DB_SEARCH"
-                    self.mode = Glob.schedule[0]
-                    self.stage_id = 0
-                    last_api_updae = time.time()
-                #elif self.mode == "WEAPON_FOR_DB_SEARCH" and written_to_db > 2:
-                #    Log.log_write(f"mode changes to WEAPON_FAST_SEARCH") 
-                #    self.mode = "GROLL"
-                #    written_to_db = 0
-
-                if time.time() - last_api_updae > 110 and self.mode != "BASE_API" and self.mode != "SYNC" and self.turned_off != True:
-                    Log.log_write(f"mode changes to BASE_API because 110s passed; lastcall = {self.market_limiter.last_call}s")
-                    self.mode = "BASE_API"
-                self.firstRun = False
-            except Exception as e:
-                print("Worker error:", e)
-                print("traceback:" + traceback.format_exc())
-                play_sound()
-                play_sound()
-                Log.log_print()
-                with open("RIVEN_ENDO_ERROR_LOG_" + QDateTime.currentDateTime().toString().replace(" ", "_").replace(":", "-") + ".txt", "w") as f:
-                    f.write(QDateTime.currentDateTime().toString() + "\n")
-                    f.write("Worker error: " + traceback.format_exc()+ "\n")
-                    for log in Log.logs:
-                        f.write(log + "\n")
-                f.close
-
-
-    def stop(self):
-        self.running = False
-
-    def enqueue_price_check(self, auction):
-        self.price_queue.append(auction)
 
 # =========================
 # UI: Histogram Widget
@@ -960,6 +385,7 @@ class MainWindow(QMainWindow):
         )
         self.root.setProperty("imageSource", QUrl.fromLocalFile(r"C:/amyfiles/projects/rivenendo/penis/Frieren.png"))
         self.root.changeVolume(0.1)
+        self.ui.volumeSlider.setValue(10)
         #говно с клода закончилось
 
         self.worker.start()
@@ -977,6 +403,60 @@ class MainWindow(QMainWindow):
         self.repost_btn = QPushButton("🔄 Перевыставить ривены")
         self.test_btn = QPushButton("🧪 Тест ривена")
         self.stop_bump_btn = QPushButton("🛑 Стоп")
+
+        class MyWidget(QWidget):
+            def __init__(self):
+                super().__init__()
+                self.setWindowTitle("Автодополнение с валидацией")
+
+                layout = QVBoxLayout(self)
+
+                self.label = QLabel("Начните вводить текст:")
+                layout.addWidget(self.label)
+
+                self.line_edit = QLineEdit(self)
+                layout.addWidget(self.line_edit)
+
+                self.error_label = QLabel("")
+                self.error_label.setStyleSheet("color: red;")
+                layout.addWidget(self.error_label)
+
+                # Допустимые варианты
+                self.variants = ["Python", "PySide6", "PyQt6", "JavaScript", "Java", "Go", "Rust"]
+
+                completer = QCompleter(self.variants, self)
+                completer.setCaseSensitivity(Qt.CaseInsensitive)
+                completer.setFilterMode(Qt.MatchContains)
+                completer.setCompletionMode(QCompleter.PopupCompletion)
+                self.line_edit.setCompleter(completer)
+
+                # Проверка при каждом изменении текста
+                self.line_edit.textChanged.connect(self.validate_input)
+
+                # Начальное состояние
+                self.validate_input(self.line_edit.text())
+
+            def validate_input(self, text: str):
+                is_valid = text in self.variants or text == ""
+
+                if text == "":
+                    # Пустое поле — нейтральное состояние, без ошибки
+                    self.line_edit.setStyleSheet("")
+                    self.error_label.setText("")
+                elif is_valid:
+                    self.line_edit.setStyleSheet(
+                        "QLineEdit { border: 2px solid #2e7d32; background-color: #eaf6ea; }"
+                    )
+                    self.error_label.setText("")
+                else:
+                    self.line_edit.setStyleSheet(
+                        "QLineEdit { border: 2px solid #c62828; background-color: #fdecea; }"
+                    )
+                    self.error_label.setText("Недопустимое значение")
+
+
+        combo = MyWidget()
+
         self.stop_bump_btn.setEnabled(False)
 
         self.bump_btn.clicked.connect(self.run_bump)
@@ -990,6 +470,8 @@ class MainWindow(QMainWindow):
         btn_row.addWidget(self.repost_btn)
         btn_row.addWidget(self.test_btn)
         btn_row.addWidget(self.stop_bump_btn)
+
+        #btn_row.addWidget(combo)
 
         self.bump_log = QTextEdit()
         self.bump_log.setReadOnly(True)
@@ -1281,10 +763,10 @@ class MainWindow(QMainWindow):
             with open(settings_path, "w") as f:
                 json.dump(settings_cur, f)
         except Exception as e:
-            win.ui.lineEdit.setText("НЕ УДАЛОСЬ СОХРАНИТЬ ОРУЖИЯ ПОД РОЛЛ")
+            QMessageBox.warning(self, "Ошибка ввода", f"Ошибка: не удалось сохранить оружия под ролл. Сохранение не произведено.")
             print(e)
             return
-        win.ui.lineEdit.setText("УДАЛОСЬ СОХРАНИТЬ ОРУЖИЯ ПОД РОЛЛ")
+        QMessageBox.information(self, "Успех", f"Оружия под ролл успешно сохранены")
         win.ui.weaponComboBox.clear()
         weapons_to_box = weapons
         for weapon in weapons_to_box:
@@ -1301,16 +783,16 @@ class MainWindow(QMainWindow):
                 if not weapon in self.worker.queue_manager.const_queues[self.worker.queue_manager.queues.fast_weapons]:
                     print(f"ERROR: Нет оружия {weapon} в списке оружий под ролл.")
                     Log.log_print(f"ERROR: Нет оружия {weapon} в списке оружий под ролл.")
-                    win.ui.lineEdit.setText(f"ОШИБКА: Нет оружия {weapon} в списке оружий под ролл.")
+                    QMessageBox.warning(self, "Ошибка", f"Нет оружия {weapon} в списке оружий под ролл. Сохранение не произведено.")
                     play_sound()
                     play_sound()
                     return
             self.worker.set_fast_weapons(weapons)
         except Exception as e:
-            win.ui.lineEdit.setText("НЕ УДАЛОСЬ СОХРАНИТЬ ОРУЖИЯ ДЛЯ УСКОРЕННОЙ ПРОВЕРКИ")
+            QMessageBox.warning(self, "Ошибка", f"Не удалось сохранить оружия для ускоренной проверки. Сохранение не произведено.")
             print(e)
             return
-        win.ui.lineEdit.setText("УДАЛОСЬ СОХРАНИТЬ ОРУЖИЯ ДЛЯ УСКОРЕННОЙ ПРОВЕРКИ")
+        QMessageBox.information(self, "Успех", f"Оружия для ускоренной проверки успешно сохранены.")
 
     def save_cooldown(self):
         self.worker.set_cooldown(win.ui.cooldownComboBox.currentText(), win.ui.cooldownInput.text())
@@ -1327,13 +809,13 @@ class MainWindow(QMainWindow):
                         print(f"Ошибка: неверный режим: {line}")
             self.worker.queue_manager.set_schedule(stages)
         except Exception as e:
-            win.ui.lineEdit.setText("НЕ УДАЛОСЬ СОХРАНИТЬ РАСПИСАНИЕ")
+            QMessageBox.warning(self, "Ошибка", f"Не удалось сохранить расписание.")
             print(e)
             return
         secs = 3
         for mode in self.worker.queue_manager.const_queues[self.worker.queue_manager.queues.modes_queue]:
             secs += self.worker.mode_to_cooldown[mode]
-        win.ui.lineEdit.setText(f"УДАЛОСЬ СОХРАНИТЬ РАСПИСАНИЕ; РАСЧЁТНОЕ ВРЕМЯ НА ВЫПОЛНЕНИЕ: {secs} СЕУНД")
+        QMessageBox.information(self, "Успех", f"Удалось сохранить расписание; расчётное время выполнения - {secs} секунд")
 
     def on_plotCOunt_edited(self):
         val = win.ui.plotsCount.text()
@@ -1349,7 +831,7 @@ class MainWindow(QMainWindow):
         try:
             val = float(val_str)
         except ValueError:
-            win.ui.lineEdit.setText("НЕВЕРНЫЙ ВВОД ВРЕМЕНИ! ВВЕДИ ЧИСЛО!")
+            QMessageBox.warning(self, "Ошибка", f"Неверный ввод времени. Введите число!")
             print("НЕВЕРНЫЙ ВВОД ВРЕМЕНИ ОЖИДАНИЯ! ВВЕДИ ЧИСЛО!")
             win.ui.cooldownInput.setText(self.worker.mode_to_cooldown[win.ui.cooldownComboBox.currentText()])
 
@@ -1375,32 +857,9 @@ class MainWindow(QMainWindow):
 
     def show_sold_grolls(self):
         return
-        weapon = win.ui.grollWeaponComboBoX.currentText()
-        stats = [win.ui.stat1.currentText(), win.ui.stat2.currentText(), win.ui.stat3.currentText()]
-        stats.sort()
-        neg =  win.ui.stat4.currentText()
-        product = weapon
-        for stat in stats:
-            product+=stat
-        product += neg
-        sold_rivens:list = self.worker.db.get_sold_rivens(product)
-        if len(sold_rivens) == 0:
-            print("no sold rivens")
-        blacklist = get_blacklist()
-        for riven in sold_rivens:
-            riven["pos_stats"] = stats
-            riven["neg_stat"] = neg
-            riven["weapon_name"] = weapon
-            riven["id"] = "0"
-            if riven["owner_name"] in blacklist:
-                riven["pidorstvo"] = blacklist[riven["owner_name"]]
-            self.worker.alert_found.emit(riven, "sold riven")
 
     def on_pod_roll_progress(self, stage):
         return
-        upper_limit = len(self.worker.good_weapons_list)
-        win.ui.podRollProgress.setMaximum(upper_limit)
-        win.ui.podRollProgress.setValue(stage)
 
     def on_groll_progress(self, stage):
         win.ui.grollProgress.setValue(stage)
@@ -1430,29 +889,57 @@ class MainWindow(QMainWindow):
         else:
             self.worker.turned_off = True
 
-    def on_message_to_display(self, destination, msg):
-        if destination == "lineEdit":
-            win.ui.lineEdit.setText(msg)
+    def on_message_to_display(self, success, msg):
+        if success:
+            QMessageBox.information(self, "Успех", msg)
+        else:
             if msg == "НЕВЕРНЫЙ ВВОД ВРЕМЕНИ! ВВЕДИ ЧИСЛО!":
                 win.ui.cooldownInput.setText(self.worker.mode_to_cooldown[mode])
+            QMessageBox.warning(self, "Ошибка", msg)
 
     def on_new_log(self, text):
         win.ui.logsText.setText(text)
         return
-        cursor = win.ui.logsText.textCursor()  # сохраняем текущее выделение
+    
+    def on_save_opt_req_queue(self):
+        text = win.ui.opt_req_queue_edit.toPlainText().split("\n")
+        url_params = []
+        for line in text:
+            if line != "":
+                if line in self.worker.weapon_rivens:
+                    url_params.append(UrlParameters(weapon=line))
+                else:
+                    print(f"Ошибка: неверное оружие: {line}")
+                    QMessageBox.warning(
+                        self,
+                        "Ошибка ввода",
+                        f"Ошибка: введено неверное оружие: {line}. Сохранение не произведено."
+                    )
+                    return
+        QMessageBox.information(
+                        self,
+                        "Сохранено",
+                        f"Очередь из оружий на проверку успешно сформирована"
+                    )
+        self.worker.set_url_params(url_params)
 
-        # Создаем отдельный курсор для вставки
-        insert_cursor = QTextCursor(win.ui.logsText.document())
-        insert_cursor.movePosition(QTextCursor.End)
-        insert_cursor.insertText(text)
+    def on_opt_req_progress(self, cur_param:UrlParameters, unprocessed:list[UrlParameters], processed:list[UrlParameters],):
+        win.ui.opr_req_current_queue_text.setText("")
+        if not (processed is None):
+            for p in processed:
+                win.ui.opr_req_current_queue_text.insertHtml(f'\n<span style="color:{value_to_color(90)};">{p.weapon}</span><br>')
+        win.ui.opr_req_current_queue_text.insertHtml(f'\n<span style="color:{value_to_color(50)};">{cur_param.weapon}</span><br>')
+        if not (unprocessed is None):
+            for p in unprocessed:
+                win.ui.opr_req_current_queue_text.insertHtml(f'\n<span style="color:{value_to_color(0)};">{p.weapon}</span><br>')
 
-        # Прокрутить вниз
-        scrollbar = win.ui.logsText.verticalScrollBar()
-        scrollbar.setValue(scrollbar.maximum())
-
-        # Восстанавливаем курсор пользователя
-        win.ui.logsText.setTextCursor(cursor)
-
+    def load_opt_req_queue_text_from_file(self):
+        with open(settings_path, "r") as f:
+            settings_cur = json.load(f)
+            url_params = settings_cur["url_params"]
+            win.ui.opt_req_queue_edit.setText("")
+            for p in url_params:
+                win.ui.opt_req_queue_edit.insertPlainText("\n" + p["weapon"])
 
 def insertMSG():
     time.sleep(0.15)
@@ -1518,7 +1005,10 @@ if __name__ == "__main__":
     win.ui.volumeSlider.valueChanged.connect(win.on_volume_changed)
     win.ui.ensureAccountDataBtn.pressed.connect(win.run_bumper_test)
     win.ui.SaveMarketAccountData.pressed.connect(win.on_save_account_data)
+    win.ui.save_opt_req_queue.pressed.connect(win.on_save_opt_req_queue)
     Log.log_printer.new_log.connect(win.on_new_log)
+    win.worker.requester.queue_updated.connect(win.on_opt_req_progress)
+    win.load_opt_req_queue_text_from_file()
 
     #claude
     win.ui.verticalLayout_6.replaceWidget(win.ui.listWidget, win.qml_widget)
@@ -1554,10 +1044,4 @@ if __name__ == "__main__":
         win.ui.tab_4.deleteLater()
         #win.ui.tab_4.isVisible()
     keyboard.add_hotkey(ACTIVATE_KEY, insertMSG)
-    #model.addAlert({
-    #"reason": "good stats",
-    #"weapon": "torid",
-    #"price": 1200,
-    #"owner": "Player123"
-    #})
     sys.exit(app.exec())

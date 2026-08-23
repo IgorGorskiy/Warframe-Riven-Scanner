@@ -18,6 +18,8 @@ from typing import Optional
 import requests
 from PySide6.QtCore import QObject, Signal
 import os
+from log_printer import LogPrinter, Log
+from PySide6.QtWidgets import QMessageBox
 
 from rate_limiter import RateLimiter
 
@@ -32,6 +34,44 @@ CACHE_VERSION = 1
 CACHE_TTL_SECONDS = 100 * 60 * 60          # 100 часов — после этого кэш считается устаревшим
 MAX_REROLLS = 14999                       # максимальный номер рероллов в API
 
+class RankDivision:
+    def __init__(self):
+        self.currently_dividing = False
+        self.steps = -1 # количество шагов (отрезков), на которые делится промежуток
+        self.stage = -1
+        self.min = 7
+        self.max = 16
+        self.points = []
+        self.starting_re_rolls = []
+        self.dict = {}
+
+    def start(self, steps, re_rolls):
+        self.starting_re_rolls.append(re_rolls)
+        self.points = []
+        self.points.append(self.min)
+        self.steps = steps
+        self.stage = 0
+        self.currently_dividing = True
+        step = int((self.max - self.min) / self.steps)
+        if self.steps == 2:
+            self.points.append()
+        for i in range(0, self.steps - 1):
+            last = self.points[-1]
+            self.points.append(last + step)
+        self.points.append(self.max)
+        Log.log_write(f"Старт разделения по рангам (отрезков - {steps}): {self.points}")
+        print(f"Старт разделения по рангам (отрезков - {steps}): {self.points}; мин реролл - {re_rolls}")
+
+    def progress(self):
+        if self.stage < self.steps and self.steps == len(self.points) - 1:
+            if self.stage == self.steps - 1:
+                self.currently_dividing = False
+            st = self.stage
+            points_cur = self.points[st], self.points[st + 1]
+            self.stage += 1
+            return [points_cur]
+        else:
+            return None
 
 # ---------------------------------------------------------------------------
 # UrlParameters
@@ -213,6 +253,7 @@ class OptimalRequester(QObject):
     auctions_ready = Signal(object, list, float, float)
     processing_error = Signal(object, str)
     queue_exhausted = Signal()
+    queue_updated = Signal(object, list, list)
 
     # Настройки алгоритма (можно переопределить снаружи)
     INITIAL_MAX_REROLLS: int = 10
@@ -229,6 +270,7 @@ class OptimalRequester(QObject):
         # --- Очередь задач --------------------------------------------------
         self._queue: deque[UrlParameters] = deque()
         self._current_params: Optional[UrlParameters] = None
+        self.processed_params = []
 
         # --- Состояние текущего прохода ------------------------------------
         self._stage: int = 0               # номер шага (заменяет локальный i)
@@ -241,6 +283,8 @@ class OptimalRequester(QObject):
         self._current_rerolls: int = 0
         self._mode: str = "cold_start"    # "cold_start" | "from_cache"
         self.cooldown = 7.0
+
+        self.rank_division = RankDivision()
 
         # --- Кэш ------------------------------------------------------------
         # _step_cache: данные текущего прохода (точки разбиения)
@@ -269,7 +313,7 @@ class OptimalRequester(QObject):
         """Прервать текущую задачу и перейти к следующей из очереди.
         Частично собранные аукционы отбрасываются."""
         if self._current_params is not None:
-            print(f"[OptimalRequester] cancel_current: отменяем {self._current_params}")
+            Log.log_write(f"[OptimalRequester] cancel_current: отменяем {self._current_params}")
         self._finish_current(success=False, emit_signal=False)
 
     def is_idle(self) -> bool:
@@ -290,8 +334,9 @@ class OptimalRequester(QObject):
         # --- Взять следующую задачу, если сейчас ничего не обрабатывается ---
         if self._current_params is None:
             if not self._queue:
+                self.processed_params = []
                 self.queue_exhausted.emit()
-                return
+                return False
             self._start_next_parameters()
 
         # --- Один запрос ---------------------------------------------------
@@ -304,7 +349,7 @@ class OptimalRequester(QObject):
 
         # --- Завершение или ошибка -----------------------------------------
         if done:
-            print(
+            Log.log_write(
                 f"[OptimalRequester] ЗАВЕРШЕНО: {len(self._auctions)} аукционов "
                 f"за {self._stage} запросов [{self._current_params}]"
             )
@@ -315,12 +360,15 @@ class OptimalRequester(QObject):
                 self._start_time,
                 time.time(),
             )
+            self.processed_params.append(self._current_params)
             self._finish_current(success=True)
         elif self._error:
             msg = f"Ошибка при обработке {self._current_params}"
-            print(f"[OptimalRequester] {msg}")
+            Log.log_write(f"[OptimalRequester] {msg}")
             self.processing_error.emit(self._current_params, msg)
+            self.processed_params.append(self._current_params)
             self._finish_current(success=False)
+        return True
 
     # ==========================================================================
     # Публичный API — персистентность кэша
@@ -341,7 +389,7 @@ class OptimalRequester(QObject):
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, indent=2)
-            print(f"[OptimalRequester] кэш сохранён в {path!r} ({len(entries)} записей)")
+            Log.log_write(f"[OptimalRequester] кэш сохранён в {path!r} ({len(entries)} записей)")
         except OSError as e:
             print(f"[OptimalRequester] не удалось сохранить кэш: {e}")
 
@@ -384,7 +432,7 @@ class OptimalRequester(QObject):
             except (KeyError, TypeError) as e:
                 print(f"[OptimalRequester] ошибка при разборе записи кэша: {e}")
 
-        print(
+        Log.log_write(
             f"[OptimalRequester] кэш загружен из {path!r}: "
             f"{loaded} записей принято, {skipped} устарело"
         )
@@ -424,6 +472,7 @@ class OptimalRequester(QObject):
     def _start_next_parameters(self) -> None:
         """Взять задачу из очереди и инициализировать состояние прохода."""
         params = self._queue.popleft()
+        self.queue_updated.emit(params, list(self._queue), self.processed_params)
         params.nullify_unnecessary_parameters()
         self._current_params = params
         self._url_constructor.parameters = params
@@ -443,7 +492,7 @@ class OptimalRequester(QObject):
             self._create_points_from_cache(self._cache_dict[params])
 
         self._set_mode()
-        print(f"[OptimalRequester] начинаем задачу: {params}  режим={self._mode!r}")
+        Log.log_write(f"[OptimalRequester] начинаем задачу: {params}  режим={self._mode!r}")
 
     def _finish_current(self, *, success: bool, emit_signal: bool = True) -> None:
         """Завершить текущую задачу (успешно или нет) и сбросить состояние."""
@@ -497,7 +546,7 @@ class OptimalRequester(QObject):
             "timestamp": time.time(),
             "rerolls_sorted": re_rolls_list,
         }
-        print(
+        Log.log_write(
             f"[OptimalRequester] кэш обновлён для {key}: "
             f"{len(re_rolls_list)} записей о рероллах"
         )
@@ -512,7 +561,7 @@ class OptimalRequester(QObject):
         re_rolls_list: list[int] = cache["rerolls_sorted"]
         ts: float = cache["timestamp"]
         tolerance = self._timestamp_to_tolerance(ts)
-        print(f"[OptimalRequester] tolerance для кэша: {tolerance}")
+        Log.log_write(f"[OptimalRequester] tolerance для кэша: {tolerance}")
 
         if not re_rolls_list:
             return
@@ -534,9 +583,12 @@ class OptimalRequester(QObject):
                 current_elem = elem
                 leftover = 0
 
+        zeros = re_rolls_list.count(0)
+        if zeros > 300:
+            print(f"ПРЕДУПРЕЖДЕНИЕ! Много нулей в кэше: 0: {zeros}, 1: {re_rolls_list.count(1)}")
         self._step_cache["timestamp"] = time.time()
         self._step_cache["rerolls_points"] = re_rolls_points
-        print(
+        Log.log_write(
             f"[OptimalRequester] точки сплита из кэша ({len(re_rolls_points) - 1} батчей): "
             f"{re_rolls_points}"
         )
@@ -557,6 +609,30 @@ class OptimalRequester(QObject):
         else:
             self._mode = "from_cache"
 
+    def edit_cache_points(self, stage):
+        rerolls_points:list = self._step_cache.get("rerolls_points", [])
+        not_last = (stage + 1) < len(rerolls_points)
+        if not_last:
+            # Обычный батч из кэша
+            rerolls_min=rerolls_points[stage]
+            rerolls_max=rerolls_points[stage + 1]
+        else:
+            # Последний батч кэша — без верхней границы
+            rerolls_min=rerolls_points[stage]
+            rerolls_max=-14999
+        if rerolls_max - rerolls_min < 2:
+            return False
+        dif = (rerolls_max - rerolls_min)
+        new_point = int(rerolls_min + (dif / 2))
+        if new_point == rerolls_min or new_point == rerolls_max:
+            return False
+        if not_last:
+            rerolls_points.insert(stage + 1, new_point)
+        else:
+            rerolls_points.append(new_point)
+        self._step_cache["rerolls_points"] = rerolls_points
+        return True
+
     def _process_new_batch(self, stage: int) -> bool:
         """Сформировать URL, выполнить запрос и обработать результат.
 
@@ -569,6 +645,16 @@ class OptimalRequester(QObject):
         """
         # --- Формирование параметров запроса --------------------------------
         rerolls_points = self._step_cache.get("rerolls_points", [])
+        if self.rank_division.currently_dividing:
+            rank_points = self.rank_division.progress()
+            if rank_points is None:
+                print(f"Ошибка: rank_division.progress вернул None")
+                self._error = True
+                return
+            Log.log_write(f"Назначается диапазон рангов: {rank_points[0]} - {rank_points[1]}")
+            self._url_constructor.set_parameters(MR_min=rank_points[0],MR_max=rank_points[1])
+        else:
+            self._url_constructor.set_parameters(MR_min=None,MR_max=None)
 
         if self._mode == "from_cache":
             if stage + 1 < len(rerolls_points):
@@ -598,7 +684,7 @@ class OptimalRequester(QObject):
                 )
 
         url = self._url_constructor.build_url()
-        print(f"[OptimalRequester] GET {url}")
+        Log.log_write(f"[OptimalRequester] GET {url}")
 
         # --- HTTP-запрос ----------------------------------------------------
         try:
@@ -631,14 +717,33 @@ class OptimalRequester(QObject):
         if len(auctions) >= self.MAX_AUCTIONS - 30:
             if self._mode == "from_cache":
                 print(
-                    f"[OptimalRequester] ОШИБКА: переполнение в режиме кэша "
+                    f"[OptimalRequester] ПРЕДУПРЕЖДЕНИЕ: переполнение в режиме кэша "
                     f"({len(auctions)} аукционов) — кэш сброшен"
                 )
-                self._step_cache.clear()
+                print(f"для url {url}")
+                #self._step_cache.clear()
+                print(f"Редактируем кэш. текущий: {rerolls_points}")
+                if self.edit_cache_points(stage):
+                    print(f"Новый: {self._step_cache.get("rerolls_points", [])}")
+                    self._need_retry = True
+                    return False
+                if not self.rank_division.currently_dividing:
+                    print(f"Пытаемся использовать ранги мастерства")
+                    self.rank_division.start(2, self._url_constructor.parameters.rerolls_min)
+                    self._need_retry = True
+                    return False
+                else:
+                    if self.rank_division.steps > 4:
+                        print("ДАЖЕ РАНГИ ЗДЕСЬ БЕССИЛЬНЫ")
+                    else:
+                        self.rank_division.start(4, self._url_constructor.parameters.rerolls_min)
+                        self._need_retry = True
+                        return False
+                print(f"ПОПЫТКА ОТРЕДАКТИРОВАТЬ ТОЧКИ ПРОВАЛЕНА")
                 self._error = True
                 return False
 
-            print(
+            Log.log_write(
                 f"[OptimalRequester] WARNING: слишком много аукционов ({len(auctions)}); "
                 f"уменьшаем шаг {self._next_rerolls_step} → "
                 f"{max(1, self._next_rerolls_step // self.DENOMINATOR)}"
@@ -655,15 +760,52 @@ class OptimalRequester(QObject):
                     "[OptimalRequester] ОШИБКА: шаг рероллов уже минимален, "
                     "но аукционов по-прежнему слишком много"
                 )
+                if not self.rank_division.currently_dividing:
+                    print(f"Пытаемся использовать ранги мастерства")
+                    self.rank_division.start(2, self._url_constructor.parameters.rerolls_min)
+                    self._need_retry = True
+                    return False
                 self._error = True
                 return False
-
-        print(
+        
+        min_v = 9999999
+        max_v = -1
+        zeros = 0
+        ones = 0
+        for auc in auctions:
+            item = auc["item"]
+            re_rolls = item["re_rolls"]
+            if re_rolls < min_v:
+                min_v = re_rolls
+            if re_rolls > max_v:
+                max_v = re_rolls
+            if re_rolls == 0:
+                zeros += 1
+            if re_rolls == 1:
+                ones += 1
+        if zeros > 300:
+            print(f"WARNING: zeros: {zeros}; ones = {ones}")
+            print(f"for url {url}")
+        Log.log_write(
             f"[OptimalRequester] получено {len(auctions)} аукционов "
             f"(реролы {self._url_constructor.parameters.rerolls_min}–"
             f"{self._url_constructor.parameters.rerolls_max})"
         )
-
+        Log.log_write(f"Реальные рероллы в полученных аукционах: {min_v} - {max_v}")
+        penis_min = self._url_constructor.parameters.rerolls_min
+        penis_max = self._url_constructor.parameters.rerolls_max
+        if penis_min is None:
+            penis_min = 0
+        if penis_max is None:
+            penis_max = 14999
+        if min_v < penis_min or max_v > penis_max:
+            QMessageBox.warning(
+                        self,
+                        "Ошибка в оптимальном реквестере",
+                        f"Рероллы в запросе: {self._url_constructor.parameters.rerolls_min}–{self._url_constructor.parameters.rerolls_max}<br>"
+                        f"Рероллы в полученных ауках: {min_v} - {max_v}<br>"
+                        f"url = {url}"
+                    )
         # --- Продвижение курсора (cold_start) --------------------------------
         self._current_rerolls += self._next_rerolls_step + 1
 
@@ -675,7 +817,7 @@ class OptimalRequester(QObject):
             return False
 
         self._auctions.extend(auctions)
-        print(
+        Log.log_write(
             f"[OptimalRequester] итого аукционов: {len(self._auctions)}"
         )
 
@@ -697,14 +839,14 @@ class OptimalRequester(QObject):
 
         # --- Условия завершения ---------------------------------------------
         if self._mode == "from_cache" and stage + 1 >= len(rerolls_points):
-            print(
+            Log.log_write(
                 f"[OptimalRequester] SUCCESS (cache): последний батч, "
                 f"аукционов в батче: {auctions_amount}"
             )
             return True
 
         if self._last_request_in_queue:
-            print(
+            Log.log_write(
                 f"[OptimalRequester] SUCCESS (cold_start): последний батч, "
                 f"аукционов в батче: {auctions_amount}"
             )
