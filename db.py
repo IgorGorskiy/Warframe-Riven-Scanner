@@ -741,6 +741,7 @@ class SuperDatabase:
             json.dump(auctions, f)
 
     def process_rivens_from_requester(self, auctions, search_hash, timestamp):
+        start_time = time.time()
         hash_id = self.get_id_from_field(search_hash, "scan_params", "hash")
         old_ids = self.get_previous_rivens_ids(hash_id)
         prev_timestamp = self.get_latest_search_timestamp(hash_id)
@@ -767,6 +768,7 @@ class SuperDatabase:
         for new_id in new_ids:
             if not new_id in old_ids:
                 self.add_riven_to_prev_scanned_rivens(hash_id, new_id)
+        print(f"Время выполнения process_rivens_from_requester: {start_time - time.time} с.  для {len(auctions)} объектов")
 
     def iso_to_timestamp(self, iso_str):
         dt = datetime.fromisoformat(iso_str)

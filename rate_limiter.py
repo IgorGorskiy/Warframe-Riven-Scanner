@@ -24,9 +24,8 @@ class RateLimiter:
         self.last_call: float = 0.0
 
     def wait(self) -> None:
-        delta = time.time() - self.last_call
-        if delta < self.cooldown:
-            time.sleep(self.cooldown - delta)
+        while time.time() - self.last_call < self.cooldown:
+            time.sleep(0.01)
 
     def set_interval(self, interval_sec: float) -> None:
         self.cooldown = interval_sec
