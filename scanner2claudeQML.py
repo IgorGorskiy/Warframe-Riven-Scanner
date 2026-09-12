@@ -17,7 +17,7 @@ import requests
 import itertools
 #import winsound
 import random
-#import pyautogui
+import pyautogui
 #import keyboard
 import traceback
 from collections import deque
@@ -945,7 +945,7 @@ class MainWindow(QMainWindow):
 def insertMSG():
     time.sleep(0.15)
     Log.log_write(f"trying to insert alt+v msg: {Glob.altvmsg}", logs = Log.altvLogs)
-    #pyautogui.write(Glob.altvmsg)
+    pyautogui.write(Glob.altvmsg)
     time.sleep(0.05)
 
 # =========================
