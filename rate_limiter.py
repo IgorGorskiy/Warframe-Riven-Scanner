@@ -4,14 +4,15 @@
 
 import time
 import requests
-import winsound
+#import winsound
 from log_printer import LogPrinter, Log
 
 HEADERS = {"accept": "application/json", "platform": "pc"}
 
 def play_sound():
     try:
-        winsound.Beep(600, 300)
+        #winsound.Beep(600, 300)
+        print("sound")
     except Exception:
         pass
 

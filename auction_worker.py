@@ -7,10 +7,7 @@ import json
 import sqlite3
 import requests
 import itertools
-import winsound
 import random
-import pyautogui
-import keyboard
 import traceback
 from collections import deque
 from uis3 import Ui_MainWindow

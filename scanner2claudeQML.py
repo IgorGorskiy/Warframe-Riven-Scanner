@@ -15,10 +15,10 @@ import json
 import sqlite3
 import requests
 import itertools
-import winsound
+#import winsound
 import random
-import pyautogui
-import keyboard
+#import pyautogui
+#import keyboard
 import traceback
 from collections import deque
 from uis3 import Ui_MainWindow
@@ -114,7 +114,7 @@ API_SEARCH3 = "&sort_by=price_asc"
 
 HEADERS = {"accept": "application/json", "platform": "pc"}
 DB_PATH = "rivens.db"
-CACHE_FILE = "C:/amyfiles/projects/rivenendo/riven_cache.json"
+CACHE_FILE = "/home/igor/Projects/warframe_projects/Warframe-Riven-Scanner/riven_cache.json"
 
 GOOD_STATS = [
     "critical_chance",
@@ -247,7 +247,8 @@ class Glob:
 
 def play_sound():
     try:
-        winsound.Beep(600, 300)
+        play_sound(1000)
+        #winsound.Beep(600, 300)
     except Exception:
         pass
 
@@ -381,9 +382,9 @@ class MainWindow(QMainWindow):
         self.root = self.qml_widget.rootObject()
         self.root.setProperty(
             "videoSource",
-            QUrl.fromLocalFile(r"C:/amyfiles/projects/rivenendo/penis/Frieren2.mp4")
+            QUrl.fromLocalFile(r"/home/igor/Projects/warframe_projects/Warframe-Riven-Scanner/penis/Frieren2.mp4")
         )
-        self.root.setProperty("imageSource", QUrl.fromLocalFile(r"C:/amyfiles/projects/rivenendo/penis/Frieren.png"))
+        self.root.setProperty("imageSource", QUrl.fromLocalFile(r"/home/igor/Projects/warframe_projects/Warframe-Riven-Scanner/penis/Frieren.png"))
         self.root.changeVolume(0.1)
         self.ui.volumeSlider.setValue(10)
         #говно с клода закончилось
@@ -944,7 +945,7 @@ class MainWindow(QMainWindow):
 def insertMSG():
     time.sleep(0.15)
     Log.log_write(f"trying to insert alt+v msg: {Glob.altvmsg}", logs = Log.altvLogs)
-    pyautogui.write(Glob.altvmsg)
+    #pyautogui.write(Glob.altvmsg)
     time.sleep(0.05)
 
 # =========================
@@ -1043,5 +1044,5 @@ if __name__ == "__main__":
     if SVINKA_VSEGDA_VIDNA:
         win.ui.tab_4.deleteLater()
         #win.ui.tab_4.isVisible()
-    keyboard.add_hotkey(ACTIVATE_KEY, insertMSG)
+    #keyboard.add_hotkey(ACTIVATE_KEY, insertMSG)
     sys.exit(app.exec())
