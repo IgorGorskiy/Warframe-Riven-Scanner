@@ -768,7 +768,7 @@ class SuperDatabase:
         for new_id in new_ids:
             if not new_id in old_ids:
                 self.add_riven_to_prev_scanned_rivens(hash_id, new_id)
-        print(f"Время выполнения process_rivens_from_requester: {start_time - time.time} с.  для {len(auctions)} объектов")
+        print(f"Время выполнения process_rivens_from_requester: {time.time() -  start_time} с.  для {len(auctions)} объектов")
 
     def iso_to_timestamp(self, iso_str):
         dt = datetime.fromisoformat(iso_str)

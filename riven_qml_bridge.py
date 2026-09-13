@@ -19,6 +19,8 @@ from PySide6.QtCore import (
     QAbstractListModel, Qt, QModelIndex, QByteArray,
 )
 from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QUrl
+from PySide6.QtGui import QDesktopServices
 
 from rivenstats import STARTING_STATS
 from enums import reasons_to_display
@@ -212,7 +214,9 @@ class RivenAlertItem(QObject):
 
     @Slot()
     def openAuction(self):
-        webbrowser.open(f"https://warframe.market/auction/{self._auc_id}")
+        #(f"https://warframe.market/auction/{self._auc_id}")
+        url = QUrl(f"https://warframe.market/auction/{self._auc_id}")
+        QDesktopServices.openUrl(url)
 
     @Slot()
     def requestDelete(self):
