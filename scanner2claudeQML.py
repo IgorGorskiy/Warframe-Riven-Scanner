@@ -390,6 +390,7 @@ class MainWindow(QMainWindow):
         #говно с клода закончилось
 
         self.worker.start()
+        #self.super_db.start()
 
         # ---------- Bumper UI ----------
         self.bumper_worker = None

@@ -6,6 +6,7 @@ from typing import List, Tuple
 import copy
 
 from datetime import datetime, time, date, timezone, timedelta
+from PySide6.QtCore import Signal, QThread
 import time
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
@@ -445,7 +446,7 @@ class PodRollDB:
         return self.cursor.fetchone()
     
 
-class SuperDatabase:
+class SuperDatabase(QThread):
     class Statuses:
         online = "online"
         ingame = "ingame"
@@ -759,6 +760,8 @@ class SuperDatabase:
                     self.dump_auctions(auctions)
             r_id = self.insert_or_update_riven(auction, timestamp)
             new_ids.append(r_id)
+            if len(new_ids) % 100 == 99:
+                time.sleep(0.02) # для переключения между потоками
         # находим пропавшие ривены. обновляем статус, удаляем id из prev_scanned_rivens
         for old_id in old_ids:
             if not old_id in new_ids:
@@ -874,3 +877,7 @@ class SuperDatabase:
         self.update_current_riven_status(riven_id, self.Statuses.visible, timestamp)
         self.update_current_riven_status(riven_id, owner_status, timestamp)
         return riven_id
+
+    def run(self):
+        while self.running:
+            time.sleep(0.1)

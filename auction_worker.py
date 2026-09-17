@@ -228,6 +228,7 @@ class AuctionWorker(QThread):
     groll_urls_progress = Signal(int)
     pod_roll_progress = Signal(int)
     message_to_ui = Signal(str, str)
+    rivens_for_superDB = Signal(list, int, float)
 
     def set_good_weapons(self, good_weapons):
         self.good_weapons = good_weapons
@@ -321,7 +322,8 @@ class AuctionWorker(QThread):
         self.process_auctions(auctions, set())
         # затем заносим информацию обо всех аукционах в БД (доделать!) доделано)
         search_hash = current_params.__hash__()
-        self.super_db.process_rivens_from_requester(auctions, search_hash, end_time)
+        #self.super_db.process_rivens_from_requester(auctions, search_hash, end_time)
+        self.rivens_for_superDB.emit(auctions, search_hash, end_time)
 
     def process_auctions(self, auctions, seen_auctions:set):
         # в качестве аргумента seen_auctions будут поступать РАЗНЫЕ списки -> один аукцион может быть проверен дважды
@@ -413,6 +415,7 @@ class AuctionWorker(QThread):
             self.weapon_rivens[w["slug"]] = w
         self.price_queue = deque()
         self.super_db = super_db
+        self.rivens_for_superDB.connect(self.super_db.process_rivens_from_requester)
         self.db = db
         self.pod_roll_db = pod_roll_db
         self.grolls_to_dismiss = self.db.get_dismiss_list()
@@ -478,3 +481,4 @@ class AuctionWorker(QThread):
 
     def stop(self):
         self.running = False
+        self.rate_limiter.running = False
