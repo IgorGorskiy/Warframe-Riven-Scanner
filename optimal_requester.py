@@ -568,7 +568,7 @@ class OptimalRequester(QObject):
 
         re_rolls_points: list[int] = [-1]
         current_elem = re_rolls_list[0]
-        prev_elem = re_rolls_list[0]
+        prev_elem = -1
         elem_count = 0
         leftover = 0
 
@@ -576,6 +576,10 @@ class OptimalRequester(QObject):
             elem_count += 1
             leftover += 1
             if elem_count > 410 - tolerance:
+                if prev_elem <= re_rolls_points[-1]:
+                    prev_elem = prev_elem + 1
+                    current_elem = current_elem + 1
+                    leftover = 0
                 re_rolls_points.append(prev_elem)
                 elem_count = leftover
             if elem > current_elem:
