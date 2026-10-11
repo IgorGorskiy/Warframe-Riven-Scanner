@@ -456,6 +456,8 @@ class SuperDatabase(QThread):
         hidden = "hidden"
 
     def __init__(self, path=None):
+        super().__init__()
+        self.running = True
         if path is None:
             base_dir = os.path.dirname(os.path.abspath(__file__))
             path = os.path.join(base_dir, "super.db")
