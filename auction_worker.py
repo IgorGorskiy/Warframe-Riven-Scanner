@@ -228,7 +228,7 @@ class AuctionWorker(QThread):
     groll_urls_progress = Signal(int)
     pod_roll_progress = Signal(int)
     message_to_ui = Signal(str, str)
-    rivens_for_superDB = Signal(list, int, float)
+    rivens_for_superDB = Signal(list, "long long", float)
 
     def set_good_weapons(self, good_weapons):
         self.good_weapons = good_weapons
@@ -473,8 +473,14 @@ class AuctionWorker(QThread):
                     self.process_simple_price_history_request()
                     
             except Exception as e:
-                print("Worker error:", e)
-                print("traceback:" + traceback.format_exc())
+                error_message = str(e)
+                if "Read timed out. (read timeout" in error_message:
+                    print("Запрос к маркету остался без ответа")
+                elif "Failed to resolve 'api.warframe.market' ([Errno -3] Temporary failure in name resolution)" in error_message:
+                    print("Запрос к маркету: ошибка Temporary failure in name resolution")
+                else:
+                    print("Worker error:", e)
+                    print("traceback:" + traceback.format_exc())
             end_time = time.perf_counter()
             execution_time = end_time - start_time
             Log.log_write(f"Итерация выполнилась за {execution_time:.4f} секунд, mode = {mode}")
