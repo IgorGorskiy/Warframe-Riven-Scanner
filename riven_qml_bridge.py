@@ -12,7 +12,7 @@ riven_qml_bridge.py
 
 import re
 import webbrowser
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from PySide6.QtCore import (
     QObject, Signal, Slot, Property,
@@ -48,6 +48,12 @@ def colorize_numbers(text: str) -> str:
 def _ts_to_str(ts) -> str:
     dt = datetime.fromtimestamp(ts)
     return f"Дата: {dt.date()} | Время: {str(dt.time())[:5]}"
+
+def seconds_since_updated(updated_str: str) -> float:
+    updated_dt = datetime.fromisoformat(updated_str)
+    now = datetime.now(timezone.utc)
+    delta = now - updated_dt
+    return delta.total_seconds()
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -139,7 +145,7 @@ class RivenAlertItem(QObject):
                 f"Цена: {self._price} | Re-rolls: {self._re_rolls} | Ratio: {ratio}{quantiles_str}<br>"
                 f"Владелец: {self._owner_name}, статус: "
                 f'<span style="color:{status_color};font-weight:bold;">{status}</span><br>'
-                f"Дата: {self._datetime}<br>"
+                f"Дата: {self._datetime} ({seconds_since_updated(updated_raw)} секунд назад)<br>"
             )
 
         # ── HTML статов ───────────────────────────────────────────
