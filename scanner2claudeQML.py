@@ -73,6 +73,12 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from rivenstats import STARTING_STATS
 
+import socket
+import urllib3.util.connection as urllib3_cn
+
+# принудительно IPv4
+urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
+
 # =========================
 # CONFIG
 # =========================
@@ -661,6 +667,8 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, e):
         try:
+            self.super_db.running = False
+            self.super_db.wait()
             if hasattr(self, "worker") and self.worker:
                 self.worker.stop()
 
